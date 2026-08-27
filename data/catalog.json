@@ -1,0 +1,52 @@
+{
+  "scripts": [
+    {
+      "script_id": "20260822-e5fbe81f",
+      "title": "test2",
+      "tags": [],
+      "status": "draft",
+      "created": "2026-08-22T23:25:35.840707+00:00",
+      "updated": "2026-08-27T16:24:04.107798+00:00",
+      "scene_count": 10
+    },
+    {
+      "script_id": "20260822-b8bed75e",
+      "title": "enrich test",
+      "tags": [],
+      "status": "draft",
+      "created": "2026-08-22T23:26:05.560541+00:00",
+      "updated": "2026-08-26T17:17:40.777153+00:00",
+      "scene_count": 3
+    },
+    {
+      "script_id": "20260822-ad852130",
+      "title": "fresh test",
+      "tags": [],
+      "status": "draft",
+      "created": "2026-08-22T23:26:33.969174+00:00",
+      "updated": "2026-08-22T23:26:34.679431+00:00",
+      "scene_count": 1
+    },
+    {
+      "script_id": "20260822-06488111",
+      "title": "fresh enrich test",
+      "tags": [],
+      "status": "draft",
+      "created": "2026-08-22T23:33:28.188748+00:00",
+      "updated": "2026-08-22T23:33:28.605752+00:00",
+      "scene_count": 1
+    },
+    {
+      "script_id": "20260822-dcc8ed1d",
+      "title": "poll test",
+      "tags": [],
+      "status": "draft",
+      "created": "2026-08-22T23:34:15.618435+00:00",
+      "updated": "2026-08-24T00:41:33.659671+00:00",
+      "scene_count": 2
+    }
+  ],
+  "scenes": {},
+  "frames": [],
+  "music": []
+}

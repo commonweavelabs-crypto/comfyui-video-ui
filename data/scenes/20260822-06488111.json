@@ -1,0 +1,21 @@
+{
+  "scenes": [
+    {
+      "scene_id": "1",
+      "prompt": "dark alley",
+      "duration": 14,
+      "frame_filename": "test.jpg",
+      "frame_id": "",
+      "audio_filename": "scene_01_amara.wav",
+      "audio_speaker": "amara",
+      "narration": "What is it?",
+      "status": "draft",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "created": "2026-08-22T23:33:28.585756+00:00",
+      "updated": "2026-08-22T23:33:28.585756+00:00",
+      "scene_number": 1
+    }
+  ]
+}

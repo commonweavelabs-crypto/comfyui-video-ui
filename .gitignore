@@ -1,0 +1,14 @@
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+dist/
+data/videos/
+data/audio/
+data/frames/
+data/broll/
+data/music/
+data/exports/
+data/feedback/
+data/render_stats.json
+

@@ -1,0 +1,58 @@
+{
+  "scenes": [
+    {
+      "scene_id": "2",
+      "prompt": "",
+      "duration": 14,
+      "frame_filename": "",
+      "frame_id": "",
+      "audio_filename": "",
+      "audio_speaker": "",
+      "narration": "",
+      "status": "draft",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "created": "2026-08-24T00:38:38.151130+00:00",
+      "updated": "2026-08-24T00:38:38.151130+00:00",
+      "scene_number": 1
+    },
+    {
+      "scene_id": "1",
+      "prompt": "test",
+      "duration": 15,
+      "frame_filename": "test.jpg",
+      "frame_id": "",
+      "audio_filename": "scene_01.wav",
+      "audio_speaker": "amara",
+      "narration": "hello",
+      "status": "draft",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "created": "2026-08-22T23:26:09.875480+00:00",
+      "updated": "2026-08-24T00:38:28.902836+00:00",
+      "scene_number": 2
+    },
+    {
+      "scene_id": "3",
+      "prompt": "",
+      "duration": 14,
+      "frame_filename": "",
+      "frame_id": "",
+      "audio_filename": "",
+      "audio_speaker": "",
+      "narration": "",
+      "status": "draft",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "broll_filename": "",
+      "broll_id": "",
+      "broll_volume": 0.0,
+      "created": "2026-08-26T17:17:40.758121+00:00",
+      "updated": "2026-08-26T17:17:40.758121+00:00",
+      "scene_number": 3
+    }
+  ]
+}

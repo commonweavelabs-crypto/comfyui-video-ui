@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f0f4ff;
+  --color-brand-100: #dbe4ff;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+}
+
+body {
+  margin: 0;
+  background: #09090b;
+  color: #f4f4f5;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar for sidebar panels */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Timeline scroll range slider */
+.timeline-scroll-range {
+  --scroll-progress: 0%;
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #6366f1 0%,
+    #6366f1 var(--scroll-progress),
+    #27272a var(--scroll-progress),
+    #27272a 100%
+  );
+  cursor: pointer;
+  outline: none;
+}
+.timeline-scroll-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #18181b;
+  border-radius: 999px;
+  background: #818cf8;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  cursor: pointer;
+}
+.timeline-scroll-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 3px solid #18181b;
+  border-radius: 999px;
+  background: #818cf8;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  cursor: pointer;
+}
+
+/* Waveform animation */
+@keyframes wave-bounce {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+.wave-bar {
+  animation: wave-bounce 0.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Pulse for rendering state */
+@keyframes soft-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.soft-pulse {
+  animation: soft-pulse 2s ease-in-out infinite;
+}
+
+/* Line clamp utility */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Drop indicator fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scaleX(0.3); }
+  to { opacity: 1; transform: scaleX(1); }
+}

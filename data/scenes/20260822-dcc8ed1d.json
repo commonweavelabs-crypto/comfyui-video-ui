@@ -1,0 +1,38 @@
+{
+  "scenes": [
+    {
+      "scene_id": "1",
+      "prompt": "test",
+      "duration": 14,
+      "frame_filename": "test.jpg",
+      "frame_id": "",
+      "audio_filename": "a.wav",
+      "audio_speaker": "amara",
+      "narration": "hi",
+      "status": "queued",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "created": "2026-08-22T23:34:16.006067+00:00",
+      "updated": "2026-08-22T23:34:16.006067+00:00",
+      "scene_number": 1
+    },
+    {
+      "scene_id": "2",
+      "prompt": "",
+      "duration": 14,
+      "frame_filename": "",
+      "frame_id": "",
+      "audio_filename": "",
+      "audio_speaker": "",
+      "narration": "",
+      "status": "draft",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "created": "2026-08-24T00:41:33.639624+00:00",
+      "updated": "2026-08-24T00:41:33.639624+00:00",
+      "scene_number": 2
+    }
+  ]
+}
