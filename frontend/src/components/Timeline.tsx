@@ -387,13 +387,6 @@ export default function Timeline({
         onMouseLeave={stopDrag}
         onScroll={handleScroll}
       >
-        {/* Leading + button — becomes the gap indicator when dropping before the first card */}
-        {gapBoundary === 0 ? (
-          <GapIndicator />
-        ) : (
-          <InsertButton onClick={() => onInsert(null)} />
-        )}
-
         {scenes.map((scene, i) => {
           const isDropTarget = dropTargetId === scene.id && draggedSceneId !== scene.id
           const isSwapTarget = isDropTarget && dropPosition === 'on'
@@ -402,6 +395,11 @@ export default function Timeline({
             key={scene.id}
             className="flex items-start"
           >
+            {/* Leading + for the first card — inside the row so it stretches/centers like every other + */}
+            {i === 0 && gapBoundary === 0 && <GapIndicator />}
+            {i === 0 && gapBoundary !== 0 && (
+              <InsertButton onClick={() => onInsert(null)} />
+            )}
             <div
               draggable
               onDragStart={(e) => handleDragStart(e, scene.id)}
