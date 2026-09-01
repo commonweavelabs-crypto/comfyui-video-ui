@@ -163,7 +163,7 @@ export default function SceneCard({
     }
   }
 
-  const canSubmit = scene.status === 'ready' || scene.status === 'draft'
+  const canSubmit = scene.status === 'ready' || scene.status === 'draft' || scene.status === 'error'
   const isComplete = scene.status === 'complete'
   const isRendering = scene.status === 'rendering'
   const isError = scene.status === 'error'
@@ -694,7 +694,7 @@ export default function SceneCard({
             onClick={() => onSubmit(scene.id)}
             className="flex-1 bg-white hover:bg-zinc-100 active:bg-white text-zinc-950 py-2.5 rounded-xl text-sm font-semibold transition-all tracking-[0.3px]"
           >
-            Submit
+            {isError ? 'Retry' : 'Submit'}
           </button>
         )}
         {isComplete && (

@@ -231,11 +231,21 @@ export default function Timeline({
       newIds[targetIdx] = draggedSceneId
       onReorder(newIds)
     } else {
-      // Insert before or after the target
-      const newIds = currentIds.filter((id) => id !== draggedSceneId)
-      const targetIdx = newIds.indexOf(targetSceneId)
-      const insertIdx = dropPosition === 'before' ? targetIdx : targetIdx + 1
+      // Insert before or after the target — skip if it's a no-op
+      // (card already sits exactly at this position, e.g. dragging
+      // scene 2 into the gap between scene 2 and scene 3)
+      const without = currentIds.filter((id) => id !== draggedSceneId)
+      const t = without.indexOf(targetSceneId)
+      const insertIdx = dropPosition === 'before' ? t : t + 1
+      const newIds = [...without]
       newIds.splice(insertIdx, 0, draggedSceneId)
+      if (newIds.join('|') === currentIds.join('|')) {
+        setDraggedSceneId(null)
+        setDropTargetId(null)
+        setDropPosition(null)
+        stopAutoScroll()
+        return
+      }
       onReorder(newIds)
     }
 
@@ -304,6 +314,33 @@ export default function Timeline({
     )
   }
 
+  // Unified insert-gap state: 'after A' and 'before B' resolve to the SAME
+  // boundary index (0 = before first card, 1 = between cards 0 and 1, ...).
+  // One indicator per boundary — no doubling up between two cards.
+  const activeBoundary = (() => {
+    if (!draggedSceneId || !dropTargetId || !dropPosition || dropPosition === 'on') return null
+    const idx = scenes.findIndex((s) => s.id === dropTargetId)
+    if (idx === -1) return null
+    return dropPosition === 'before' ? idx : idx + 1
+  })()
+
+  // A drop that would put the card back in its own place is a no-op
+  // (e.g. dragging scene 2 into the gap between scene 2 and scene 3) —
+  // suppress the indicator and skip the reorder entirely.
+  const isNoopDrop = (() => {
+    if (!draggedSceneId || !dropTargetId || !dropPosition || dropPosition === 'on') return false
+    const order = scenes.map((s) => s.id)
+    const without = order.filter((id) => id !== draggedSceneId)
+    const t = without.indexOf(dropTargetId)
+    const insertIdx = dropPosition === 'before' ? t : t + 1
+    const after = [...without]
+    after.splice(insertIdx, 0, draggedSceneId)
+    return after.join('|') === order.join('|')
+  })()
+
+  // The single boundary index whose gap indicator is shown (or null)
+  const gapBoundary = isNoopDrop ? null : activeBoundary
+
   return (
     <div className="flex flex-col h-full">
       {/* Timeline header */}
@@ -350,27 +387,21 @@ export default function Timeline({
         onMouseLeave={stopDrag}
         onScroll={handleScroll}
       >
-        {/* Leading + button — only one, before the first card */}
-        <InsertButton onClick={() => onInsert(null)} />
+        {/* Leading + button — becomes the gap indicator when dropping before the first card */}
+        {gapBoundary === 0 ? (
+          <GapIndicator />
+        ) : (
+          <InsertButton onClick={() => onInsert(null)} />
+        )}
 
         {scenes.map((scene, i) => {
           const isDropTarget = dropTargetId === scene.id && draggedSceneId !== scene.id
           const isSwapTarget = isDropTarget && dropPosition === 'on'
-          const showAfterGap = isDropTarget && dropPosition === 'after' && scenes.length > 2
-          const showLeadingGap = isDropTarget && dropPosition === 'before' && scenes.length > 2
           return (
           <div
             key={scene.id}
             className="flex items-start"
           >
-            {/* Drop indicator before this card — replaces nothing, just shows the gap */}
-            {showLeadingGap && (
-              <div className="flex-shrink-0 w-7 mx-1 self-stretch flex items-center justify-center z-10 animate-[fadeIn_150ms_ease-out]">
-                <div className="w-full h-[85%] bg-brand-500/15 border-2 border-dashed border-brand-500 rounded-2xl flex items-center justify-center">
-                  <div className="w-1.5 h-12 bg-brand-500 rounded-full" />
-                </div>
-              </div>
-            )}
             <div
               draggable
               onDragStart={(e) => handleDragStart(e, scene.id)}
@@ -407,13 +438,9 @@ export default function Timeline({
               onDeleteRender={onDeleteRender}
             />
             </div>
-            {/* Trailing + button — replaced by gap indicator when dropping after this card */}
-            {showAfterGap ? (
-              <div className="flex-shrink-0 w-7 mx-1 self-stretch flex items-center justify-center z-10 animate-[fadeIn_150ms_ease-out]">
-                <div className="w-full h-[85%] bg-brand-500/15 border-2 border-dashed border-brand-500 rounded-2xl flex items-center justify-center">
-                  <div className="w-1.5 h-12 bg-brand-500 rounded-full" />
-                </div>
-              </div>
+            {/* Trailing + button — becomes the gap indicator when this boundary is active */}
+            {gapBoundary === i + 1 ? (
+              <GapIndicator />
             ) : (
               <InsertButton onClick={() => onInsert(scene.id)} />
             )}
@@ -440,6 +467,16 @@ export default function Timeline({
         <div className="w-10 text-right text-sm font-semibold text-zinc-300 tabular-nums">
           {Math.round(scrollProgress)}%
         </div>
+      </div>
+    </div>
+  )
+}
+
+function GapIndicator() {
+  return (
+    <div className="flex-shrink-0 w-7 mx-1 self-stretch flex items-center justify-center z-10 animate-[fadeIn_150ms_ease-out]">
+      <div className="w-full h-[85%] bg-brand-500/15 border-2 border-dashed border-brand-500 rounded-2xl flex items-center justify-center">
+        <div className="w-1.5 h-12 bg-brand-500 rounded-full" />
       </div>
     </div>
   )
