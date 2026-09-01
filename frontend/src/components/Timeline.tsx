@@ -66,12 +66,6 @@ export default function Timeline({
   const dragMouseXRef = useRef<number>(0)
   const dragMouseYRef = useRef<number>(0)
 
-  // Debug: show scroll zones
-  const [showScrollZones, setShowScrollZones] = useState(false)
-  const [inLeftZone, setInLeftZone] = useState(false)
-  const [inRightZone, setInRightZone] = useState(false)
-  const [debugInfo, setDebugInfo] = useState('')
-
   const EDGE_ZONE = 100 // px from edge to trigger auto-scroll
   const SCROLL_SPEED = 25 // px per frame
 
@@ -111,7 +105,7 @@ export default function Timeline({
         container.scrollLeft += speed
         scrolled = true
       }
-      // Debug: update scroll progress state so the scroll bar reflects changes
+      // Keep the scrollbar widget in sync while auto-scrolling
       if (scrolled) {
         const max = container.scrollWidth - container.clientWidth
         if (max > 0) {
@@ -119,15 +113,6 @@ export default function Timeline({
           setScrollProgress(pct)
         }
       }
-      // Debug info — update every frame so we can see what's happening
-      setDebugInfo(
-        `dragId: ${currentDragId ? 'SET' : 'NULL'} | ` +
-        `mouseX: ${mouseX} | ` +
-        `container: L=${Math.round(rect.left)} R=${Math.round(rect.right)} | ` +
-        `distL: ${Math.round(distFromLeft)} distR: ${Math.round(distFromRight)} | ` +
-        `scrollLeft: ${Math.round(container.scrollLeft)} | ` +
-        `scrolled: ${scrolled ? 'YES' : 'no'}`
-      )
     }, 16) // ~60fps
   }, [])
 
@@ -142,23 +127,11 @@ export default function Timeline({
   const trackMouse = useCallback((e: React.DragEvent) => {
     dragMouseXRef.current = e.clientX
     dragMouseYRef.current = e.clientY
-
-    // Update debug zone indicators
-    const container = scrollRef.current
-    if (container) {
-      const rect = container.getBoundingClientRect()
-      const distFromLeft = e.clientX - rect.left
-      const distFromRight = rect.right - e.clientX
-      const inY = e.clientY >= rect.top && e.clientY <= rect.bottom
-      setInLeftZone(inY && distFromLeft < EDGE_ZONE && distFromLeft >= 0)
-      setInRightZone(inY && distFromRight < EDGE_ZONE && distFromRight >= 0)
-    }
   }, [])
 
   const handleDragStart = useCallback((e: React.DragEvent, sceneId: string) => {
     draggedSceneIdRef.current = sceneId
     setDraggedSceneId(sceneId)
-    setShowScrollZones(true)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', sceneId)
     const card = e.currentTarget as HTMLElement
@@ -173,15 +146,6 @@ export default function Timeline({
       const de = ev as DragEvent
       dragMouseXRef.current = de.clientX
       dragMouseYRef.current = de.clientY
-      const container = scrollRef.current
-      if (container) {
-        const rect = container.getBoundingClientRect()
-        const distFromLeft = de.clientX - rect.left
-        const distFromRight = rect.right - de.clientX
-        const inY = de.clientY >= rect.top && de.clientY <= rect.bottom
-        setInLeftZone(inY && distFromLeft < EDGE_ZONE && distFromLeft >= 0)
-        setInRightZone(inY && distFromRight < EDGE_ZONE && distFromRight >= 0)
-      }
       ev.preventDefault()
     }
     window.addEventListener('dragover', docHandler)
@@ -196,9 +160,6 @@ export default function Timeline({
     setDraggedSceneId(null)
     setDropTargetId(null)
     setDropPosition(null)
-    setShowScrollZones(false)
-    setInLeftZone(false)
-    setInRightZone(false)
     stopAutoScroll()
     // Remove document-level dragover listener
     const cleanup = (draggedSceneIdRef as any).cleanup as (() => void) | null
@@ -380,41 +341,9 @@ export default function Timeline({
           }
         }}
       >
-      {/* Debug: visible scroll zones — only shown while dragging */}
-      {showScrollZones && scrollRef.current && (() => {
-        const rect = scrollRef.current.getBoundingClientRect()
-        return (
-          <>
-            <div
-              className={`absolute left-0 top-0 bottom-0 z-50 pointer-events-none flex items-center justify-center transition-all duration-150 ${
-                inLeftZone ? 'bg-brand-500/20 border-r-2 border-brand-500' : 'bg-zinc-500/5 border-r border-zinc-700'
-              }`}
-              style={{ width: `${EDGE_ZONE}px` }}
-            >
-              <span className={`text-xs font-mono font-bold tracking-wider uppercase rotate-[-90deg] whitespace-nowrap ${
-                inLeftZone ? 'text-brand-400' : 'text-zinc-600'
-              }`}>
-                {inLeftZone ? 'Scroll Left' : 'Left Zone'}
-              </span>
-            </div>
-            <div
-              className={`absolute right-0 top-0 bottom-0 z-50 pointer-events-none flex items-center justify-center transition-all duration-150 ${
-                inRightZone ? 'bg-brand-500/20 border-l-2 border-brand-500' : 'bg-zinc-500/5 border-l border-zinc-700'
-              }`}
-              style={{ width: `${EDGE_ZONE}px` }}
-            >
-              <span className={`text-xs font-mono font-bold tracking-wider uppercase rotate-90 whitespace-nowrap ${
-                inRightZone ? 'text-brand-400' : 'text-zinc-600'
-              }`}>
-                {inRightZone ? 'Scroll Right' : 'Right Zone'}
-              </span>
-            </div>
-          </>
-        )
-      })()}
       <div
         ref={scrollRef}
-        className="flex gap-0 overflow-x-auto pb-6 scrollbar-hide min-w-0 cursor-grab active:cursor-grabbing touch-pan-x flex-1 items-start"
+        className="flex gap-0 overflow-x-auto pb-6 scrollbar-hide min-w-0 cursor-grab active:cursor-grabbing touch-pan-x snap-x flex-1 items-start"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={stopDrag}
@@ -496,11 +425,6 @@ export default function Timeline({
 
       {/* Scroll Bar — controls and reflects timeline position */}
       <div className="text-center text-[10px] text-zinc-600 tracking-[1px] uppercase mb-1">Scroll Bar</div>
-      {showScrollZones && (
-        <div className="text-center text-[10px] text-brand-400 font-mono mb-1 max-w-[800px] mx-auto truncate">
-          {debugInfo || 'interval not started'}
-        </div>
-      )}
       <div className="mx-auto flex w-full max-w-[480px] items-center gap-4 rounded-full border border-zinc-800 bg-zinc-900 px-6 py-3.5 shadow-2xl">
         <input
           type="range"
