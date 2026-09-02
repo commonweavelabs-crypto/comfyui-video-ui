@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "title": "Dont Hold My Arm",
+  "raw_text": "INT. LIVING ROOM - NIGHT\n\nWind rattles the windows. Fog presses against the glass.\n\nAngela reaches out and holds James arm. He pulls back sharply.\n\nJAMES\n(angry)\nDont hold my arm.\n\nANGELA\nIm just trying to help you!\n\nNARRATOR (V.O.)\nIt was the last night any of them would spend in that house.\n\nAngela lets go. Silence.\n",
+  "lines": [
+    {
+      "seq": 0,
+      "type": "heading",
+      "character_id": null,
+      "text": "INT. LIVING ROOM - NIGHT"
+    },
+    {
+      "seq": 1,
+      "type": "direction",
+      "character_id": null,
+      "text": "Wind rattles the windows. Fog presses against the glass."
+    },
+    {
+      "seq": 2,
+      "type": "direction",
+      "character_id": null,
+      "text": "Angela reaches out and holds James arm. He pulls back sharply."
+    },
+    {
+      "seq": 3,
+      "type": "character",
+      "character_id": "3fd4ffd4",
+      "text": "JAMES"
+    },
+    {
+      "seq": 4,
+      "type": "parenthetical",
+      "character_id": "3fd4ffd4",
+      "text": "(angry)"
+    },
+    {
+      "seq": 5,
+      "type": "dialogue",
+      "character_id": "3fd4ffd4",
+      "text": "Dont hold my arm."
+    },
+    {
+      "seq": 6,
+      "type": "character",
+      "character_id": "6d2b01e3",
+      "text": "ANGELA"
+    },
+    {
+      "seq": 7,
+      "type": "dialogue",
+      "character_id": "6d2b01e3",
+      "text": "Im just trying to help you!"
+    },
+    {
+      "seq": 8,
+      "type": "character",
+      "character_id": "73688932",
+      "text": "NARRATOR"
+    },
+    {
+      "seq": 9,
+      "type": "dialogue",
+      "character_id": "73688932",
+      "text": "It was the last night any of them would spend in that house."
+    },
+    {
+      "seq": 10,
+      "type": "direction",
+      "character_id": null,
+      "text": "Angela lets go. Silence."
+    }
+  ],
+  "characters": [
+    {
+      "id": "3fd4ffd4",
+      "name": "JAMES",
+      "aliases": [],
+      "type": "character",
+      "traits": {}
+    },
+    {
+      "id": "6d2b01e3",
+      "name": "ANGELA",
+      "aliases": [],
+      "type": "character",
+      "traits": {}
+    },
+    {
+      "id": "73688932",
+      "name": "NARRATOR",
+      "aliases": [],
+      "type": "narrator",
+      "traits": {}
+    }
+  ],
+  "speak_direction": false,
+  "director_voice_id": null,
+  "linked_projects": [],
+  "created": "2026-09-01T22:12:48.163334-04:00"
+}

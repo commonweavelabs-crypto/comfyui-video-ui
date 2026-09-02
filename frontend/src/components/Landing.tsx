@@ -32,10 +32,35 @@ export default function Landing({
     setFormatting(true)
     setFormatError(null)
     try {
+      // If the input already looks like a Fountain script, skip the LLM
+      // entirely — parse locally and open the doc view immediately.
+      const t = prompt.trim()
+      const looksLikeScript =
+        /^(INT\.|EXT\.)/im.test(t) || /^[A-Z][A-Z ']{2,30}$/m.test(t)
+      if (looksLikeScript) {
+        const res = await fetch('/api/writing/scripts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ raw_text: t }),
+        })
+        if (!res.ok) {
+          const detail = await res.json().catch(() => ({}))
+          throw new Error(detail.detail || 'Failed to parse script')
+        }
+        const blob = await res.json()
+        onScriptFormatted({
+          title: blob.title,
+          raw_text: blob.raw_text,
+          characters: blob.characters,
+          lines: blob.lines,
+        })
+        return
+      }
+      // Otherwise: full LLM formatting (needs API key configured)
       const res = await fetch('/api/writing/format', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim() }),
+        body: JSON.stringify({ prompt: t }),
       })
       if (!res.ok) {
         const detail = await res.json().catch(() => ({}))

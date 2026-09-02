@@ -10,6 +10,7 @@ import MusicPanel from './components/MusicPanel'
 import ExportPanel from './components/ExportPanel'
 import WorkflowWizard from './components/WorkflowWizard'
 import Landing from './components/Landing'
+import ScriptDoc, { type ScriptDocData } from './components/ScriptDoc'
 
 type SidebarTab = 'scripts' | 'frames' | 'music'
 
@@ -60,6 +61,7 @@ export default function App() {
   const [showWizard, setShowWizard] = useState(false)
   const [wizardScript, setWizardScript] = useState<Script | null>(null)
   const [showProjectsPanel, setShowProjectsPanel] = useState(false)
+  const [scriptDoc, setScriptDoc] = useState<ScriptDocData | null>(null)
   const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([])
   const [selectedMusicTrack, setSelectedMusicTrack] = useState<string | null>(null)
   const [showExportPanel, setShowExportPanel] = useState(false)
@@ -216,6 +218,26 @@ export default function App() {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 4000)
   }, [])
+
+  // Open a saved script in the doc view
+  const handleOpenScriptDoc = useCallback(async (scriptId: string) => {
+    try {
+      const blob = await fetch(`/api/writing/scripts/${scriptId}`).then(async (r) => {
+        if (!r.ok) throw new Error('Script not found')
+        return r.json()
+      })
+      setScriptDoc({
+        title: blob.title,
+        raw_text: blob.raw_text,
+        lines: blob.lines ?? [],
+        characters: blob.characters ?? [],
+        script_id: blob.script_id,
+        version: blob.version,
+      })
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to open script', 'error')
+    }
+  }, [showToast])
 
   // ─── Load scripts on mount ──────────────────────────────────
   const loadScripts = useCallback(async () => {
@@ -975,7 +997,14 @@ export default function App() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {(!activeScript && !showProjectsPanel) ? (
+        {scriptDoc ? (
+          /* ─── Script doc view: full-screen formatted editor ─── */
+          <ScriptDoc
+            data={scriptDoc}
+            onBack={() => setScriptDoc(null)}
+            showToast={showToast}
+          />
+        ) : (!activeScript && !showProjectsPanel) ? (
           /* ─── Landing: clean, no sidebar ─── */
           <Landing
             onBrowseProjects={() => setShowProjectsPanel(true)}
@@ -984,9 +1013,13 @@ export default function App() {
               handleSelectScript(script)
             }}
             onScriptFormatted={(result) => {
-              // TODO(M5a-5): open the doc view with the formatted script.
-              // For now, surface the parse result so the flow is testable.
-              showToast(`Formatted "${result.title}" — ${result.characters.length} characters, ${Array.isArray(result.lines) ? result.lines.length : 0} lines (doc view coming next)`, 'info')
+              // Open the doc view with the freshly formatted script
+              setScriptDoc({
+                title: result.title,
+                raw_text: result.raw_text,
+                lines: result.lines as ScriptDocData['lines'],
+                characters: result.characters as ScriptDocData['characters'],
+              })
             }}
             showToast={showToast}
           />
