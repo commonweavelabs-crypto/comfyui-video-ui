@@ -985,7 +985,7 @@ export default function App() {
                   : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              Scripts
+              Projects
             </button>
             <button
               onClick={() => setSidebarTab('frames')}

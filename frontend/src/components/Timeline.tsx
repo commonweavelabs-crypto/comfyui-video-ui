@@ -307,7 +307,7 @@ export default function Timeline({
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-16 text-center max-w-md">
           <div className="text-xl text-zinc-400 mb-1">No scenes yet</div>
           <div className="text-sm text-zinc-600">
-            Select a script from the library and submit it to the pipeline. The AI will break it into scenes automatically.
+            Select a project from the library, or create a new one to get started.
           </div>
         </div>
       </div>

@@ -292,7 +292,7 @@ export default function WorkflowWizard({
                       type="text"
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      placeholder="My Video Script"
+                      placeholder="My Video Project"
                       className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-4 py-3 text-sm placeholder:text-zinc-600 focus:outline-none text-zinc-200"
                     />
                   </div>
@@ -555,7 +555,7 @@ export default function WorkflowWizard({
 
           {step === 6 && !script && (
             <div className="text-center py-8 text-zinc-600 text-sm">
-              No script selected. Please go back to step 1.
+              No project selected. Please go back to step 1.
             </div>
           )}
         </div>

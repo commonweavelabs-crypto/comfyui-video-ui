@@ -50,7 +50,7 @@ export default function ScriptLibrary({
       setMode('library')
       onCreated()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create script')
+      setError(e instanceof Error ? e.message : 'Failed to create project')
     } finally {
       setCreating(false)
     }
@@ -97,7 +97,7 @@ export default function ScriptLibrary({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search scripts..."
+              placeholder="Search projects..."
               className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-xl px-4 py-2.5 text-sm placeholder:text-zinc-600 focus:outline-none text-zinc-200"
             />
           </div>
@@ -122,10 +122,10 @@ export default function ScriptLibrary({
           {/* Script list */}
           <div className="flex-1 overflow-y-auto scrollbar-thin space-y-2">
             {loading ? (
-              <div className="text-center py-8 text-zinc-600 text-sm">Loading scripts...</div>
+              <div className="text-center py-8 text-zinc-600 text-sm">Loading projects...</div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-8 text-zinc-600 text-sm">
-                {scripts.length === 0 ? 'No scripts yet. Create one to get started.' : 'No matches found.'}
+                {scripts.length === 0 ? 'No projects yet. Create one to get started.' : 'No matches found.'}
               </div>
             ) : (
               filtered.map((script) => (
@@ -193,7 +193,7 @@ export default function ScriptLibrary({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="My Video Script"
+              placeholder="My Video Project"
               className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-xl px-4 py-2.5 text-sm placeholder:text-zinc-600 focus:outline-none text-zinc-200"
             />
           </div>
@@ -218,7 +218,7 @@ export default function ScriptLibrary({
             disabled={!title.trim() || !content.trim() || creating}
             className="w-full bg-brand-600 hover:bg-brand-500 active:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm tracking-[0.3px] transition-all"
           >
-            {creating ? 'Creating...' : 'Create Script'}
+            {creating ? 'Creating...' : 'Create Project'}
           </button>
         </div>
       )}

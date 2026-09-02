@@ -51,7 +51,7 @@ export default function Header({
               ComfyUI Video Workflow
             </div>
             <div className="text-[11px] text-zinc-500 mt-0.5">
-              {activeScriptTitle ?? 'No script selected'}
+              {activeScriptTitle ?? 'No project selected'}
             </div>
           </div>
         </div>

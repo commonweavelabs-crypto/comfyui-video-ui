@@ -9,17 +9,47 @@
       "audio_filename": "charles voice.mp3",
       "audio_speaker": "",
       "narration": "",
-      "status": "queued",
+      "status": "complete",
       "feedback": "",
       "prompt_id": "0610317f-5d5c-4d8e-b0fb-466dfddc1fd0",
-      "video_path": null,
+      "video_path": "C:\\Users\\Guilherme\\comfyui-video-ui\\data\\videos\\20260822-e5fbe81f\\scene_11_1788311523_20260822-e5fbe81f_scene_11_00001_.mp4",
       "broll_filename": "",
       "broll_id": "",
       "broll_volume": 0.0,
       "created": "2026-09-01T23:11:05.724191+00:00",
-      "updated": "2026-09-01T23:36:18.168242+00:00",
+      "updated": "2026-09-02T01:25:03.433436+00:00",
       "scene_number": 1,
-      "error": "All connection attempts failed"
+      "error": "All connection attempts failed",
+      "video_files": [
+        {
+          "filename": "20260822-e5fbe81f_scene_11_00001_.mp4",
+          "subfolder": "video",
+          "type": "output",
+          "node_id": "341"
+        }
+      ],
+      "renders": [
+        {
+          "render_id": "2da845a3aeb1",
+          "prompt_id": "0610317f-5d5c-4d8e-b0fb-466dfddc1fd0",
+          "video_filename": "scene_11_1788311523_20260822-e5fbe81f_scene_11_00001_.mp4",
+          "video_path": "C:\\Users\\Guilherme\\comfyui-video-ui\\data\\videos\\20260822-e5fbe81f\\scene_11_1788311523_20260822-e5fbe81f_scene_11_00001_.mp4",
+          "created": "2026-09-02T01:12:03.067423+00:00",
+          "duration": 14,
+          "render_time_seconds": null
+        },
+        {
+          "render_id": "9532f19e1b3a",
+          "prompt_id": "0610317f-5d5c-4d8e-b0fb-466dfddc1fd0",
+          "video_filename": "scene_11_1788311523_20260822-e5fbe81f_scene_11_00001_.mp4",
+          "video_path": "C:\\Users\\Guilherme\\comfyui-video-ui\\data\\videos\\20260822-e5fbe81f\\scene_11_1788311523_20260822-e5fbe81f_scene_11_00001_.mp4",
+          "created": "2026-09-02T01:12:03.410470+00:00",
+          "duration": 14,
+          "render_time_seconds": null
+        }
+      ],
+      "video_filename": "scene_11_1788311523_20260822-e5fbe81f_scene_11_00001_.mp4",
+      "active_render_id": "9532f19e1b3a"
     },
     {
       "scene_id": "1",
