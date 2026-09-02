@@ -62,7 +62,7 @@ app.add_middleware(
 
 from routes import scripts, scenes, comfyui, audio, frames, videos  # noqa: E402
 from routes import broll, music, export  # noqa: E402
-from routes import disk_usage  # noqa: E402
+from routes import disk_usage, writing  # noqa: E402
 
 app.include_router(scripts.router)
 app.include_router(scenes.router)
@@ -74,6 +74,7 @@ app.include_router(broll.router)
 app.include_router(music.router)
 app.include_router(export.router)
 app.include_router(disk_usage.router)
+app.include_router(writing.router)
 
 
 # ── Pipeline route (F2 — script → scene breakdown) ────────────────────────
