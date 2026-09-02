@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import CastPanel, { type CatalogVoice } from './CastPanel'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,8 @@ export interface ScriptCharacter {
   name: string
   type: 'character' | 'narrator'
   traits: Record<string, string>
+  voice_id?: string | null
+  voice_locked?: boolean
 }
 
 export interface ScriptDocData {
@@ -86,6 +89,40 @@ export default function ScriptDoc({ data, onBack, showToast, onSaved }: ScriptDo
   const [editingSeq, setEditingSeq] = useState<number | null>(null)
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showCast, setShowCast] = useState(false)
+  const [voices, setVoices] = useState<CatalogVoice[]>([])
+
+  // Load the voice catalog when the cast panel is opened
+  const openCast = async () => {
+    setShowCast((s) => !s)
+    if (voices.length === 0) {
+      try {
+        const res = await fetch('/api/audio/voices')
+        if (res.ok) {
+          const data = await res.json()
+          setVoices(data.voices ?? [])
+        }
+      } catch {
+        /* catalog stays empty — picker shows nothing */
+      }
+    }
+  }
+
+  const reloadDoc = async () => {
+    if (!scriptId) return
+    try {
+      const blob = await fetch(`/api/writing/scripts/${scriptId}`).then(async (r) => {
+        if (!r.ok) throw new Error('Failed to reload')
+        return r.json()
+      })
+      setLines(blob.lines ?? [])
+      setCharacters(blob.characters ?? [])
+      setVersion(blob.version ?? version)
+      setDirty(false)
+    } catch {
+      showToast('Failed to reload script', 'error')
+    }
+  }
 
   const wordCount = useMemo(
     () => lines.reduce((n, l) => n + (l.type === 'dialogue' || l.type === 'direction' ? l.text.split(/\s+/).length : 0), 0),
@@ -203,6 +240,16 @@ export default function ScriptDoc({ data, onBack, showToast, onSaved }: ScriptDo
           v{version} · {lines.length} lines · ~{wordCount} words
         </div>
         <button
+          onClick={openCast}
+          className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all tracking-[0.3px] border ${
+            showCast
+              ? 'bg-brand-600/20 border-brand-500/40 text-brand-400'
+              : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+          }`}
+        >
+          Cast
+        </button>
+        <button
           onClick={handleSave}
           disabled={!dirty || saving}
           className="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 active:bg-brand-600 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-all tracking-[0.3px]"
@@ -233,9 +280,10 @@ export default function ScriptDoc({ data, onBack, showToast, onSaved }: ScriptDo
         ))}
       </div>
 
-      {/* The script page */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-6 pb-16">
-        <div className="max-w-3xl mx-auto mt-4 bg-zinc-900/40 border border-zinc-800/70 rounded-2xl px-10 py-8 font-mono shadow-2xl">
+      {/* Main area: page + optional cast drawer */}
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto scrollbar-thin px-6 pb-16 min-w-0">
+          <div className="max-w-3xl mx-auto mt-4 bg-zinc-900/40 border border-zinc-800/70 rounded-2xl px-10 py-8 font-mono shadow-2xl">
           {lines.map((l) => (
             <div key={l.seq} className="group relative">
               {/* Hover controls: type flip + delete */}
@@ -300,6 +348,23 @@ export default function ScriptDoc({ data, onBack, showToast, onSaved }: ScriptDo
           <span><span className="text-sky-300">Narrator</span> — spoken, has a voice</span>
           <span>Click any line to edit · flip its type on hover</span>
         </div>
+        </div>
+
+        {/* Cast drawer */}
+        {showCast && (
+          <CastPanel
+            characters={characters.map((c) => ({
+              ...c,
+              voice_id: c.voice_id ?? null,
+              voice_locked: c.voice_locked ?? false,
+            }))}
+            voices={voices}
+            scriptId={scriptId ?? ''}
+            version={version}
+            onChanged={reloadDoc}
+            showToast={showToast}
+          />
+        )}
       </div>
     </div>
   )

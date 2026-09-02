@@ -174,3 +174,149 @@ async def link_project_route(script_id: str, body: dict):
         raise HTTPException(400, "version and project_id required")
     script_store.link_project(script_id, int(version), project_id)
     return {"success": True}
+
+
+# ── Voice casting (M5a-6) ─────────────────────────────────────────────────
+
+import sys
+
+from config import AUDIO_DIR
+
+AUDIO_PREVIEW_DIR = AUDIO_DIR / "previews"
+
+
+def _load_voices_catalog() -> list[dict]:
+    from config import SCRIPTS_CATALOG_PATH
+    voices_path = SCRIPTS_CATALOG_PATH.parent / "voices_catalog.json"
+    if not voices_path.exists():
+        return []
+    try:
+        data = json.loads(voices_path.read_text(encoding="utf-8"))
+        return data.get("voices", data) if isinstance(data, dict) else data
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def _score_voice(character: dict, voice: dict, used_voice_ids: set[str]) -> int:
+    """Score a catalog voice for a character: gender match +2, age overlap
+    +1, unused +3, design voices preferred over personal clones +1.
+    Higher is better."""
+    traits = character.get("traits") or {}
+    want_g = (traits.get("gender") or "").lower()
+    # Common-name heuristic when the LLM didn't provide a gender
+    if not want_g:
+        want_g = _GENDER_BY_NAME.get((character.get("name") or "").split()[0].upper(), "")
+    want_a = (traits.get("age_band") or "").lower()
+    vt = voice.get("traits", {}) or {}
+    s = 0
+    vg = (vt.get("gender") or "").lower()
+    va = (vt.get("age_band") or "").lower()
+    if want_g and vg[:3] == want_g[:3]:
+        s += 2
+    if want_a and want_a[:3] in va:
+        s += 1
+    if voice.get("voice_id") not in used_voice_ids:
+        s += 3
+    # Prefer designed voices over clones of specific real people for
+    # fictional characters (clones are for their named person / user choice)
+    if not str(voice.get("voice_id", "")).startswith("clone-"):
+        s += 1
+    return s
+
+
+# Minimal common first-name gender map (autocast heuristic only — the
+# settings doc view and LLM manifest remain the source of truth)
+_GENDER_BY_NAME = {
+    "JAMES": "male", "JOHN": "male", "MICHAEL": "male", "DAVID": "male",
+    "PETER": "male", "MARCUS": "male", "KAI": "male", "ROBERT": "male",
+    "THOMAS": "male", "DANIEL": "male", "MARK": "male", "PAUL": "male",
+    "STEVE": "male", "CHARLES": "male", "LUKE": "male", "MAX": "male",
+    "ANGELA": "female", "MARY": "female", "SARAH": "female", "MAYA": "female",
+    "ELEANOR": "female", "SOFIA": "female", "RUTH": "female", "ANNA": "female",
+    "EMMA": "female", "LISA": "female", "MARIA": "female", "LINDA": "female",
+    "NARRATOR": "",  # narrator takes any voice
+}
+
+
+def _auto_assign_voice(character: dict, used_voice_ids: set[str]) -> str | None:
+    """Pick the best unused voice for a character by gender/age traits."""
+    catalog = _load_voices_catalog()
+    if not catalog:
+        return None
+    best = max(catalog, key=lambda v: _score_voice(character, v, used_voice_ids), default=None)
+    return best.get("voice_id") if best else None
+
+
+@router.post("/scripts/{script_id}/versions/{version}/autocast")
+async def auto_cast(script_id: str, version: int):
+    """Auto-assign a voice to every unassigned character (by traits)."""
+    blob = script_store.get_script_version(script_id, version)
+    if not blob:
+        raise HTTPException(404, "Script not found")
+    catalog = _load_voices_catalog()
+    if not catalog:
+        raise HTTPException(503, "Voice catalog not found")
+
+    used = {c["voice_id"] for c in blob.get("characters", []) if c.get("voice_id")}
+    assigned = []
+    for c in blob.get("characters", []):
+        if c.get("voice_id") and c.get("voice_locked"):
+            used.add(c["voice_id"])
+            continue
+        best = max(catalog, key=lambda v: _score_voice(c, v, used), default=None)
+        if best:
+            script_store.update_character(script_id, version, c["id"], {"voice_id": best["voice_id"]})
+            used.add(best["voice_id"])
+            assigned.append({"character_id": c["id"], "name": c["name"], "voice_id": best["voice_id"]})
+    return {"success": True, "assignments": assigned}
+
+
+class PreviewBody(BaseModel):
+    text: str
+    voice_id: str | None = None
+    character_name: str = ""
+
+
+@router.post("/voice-preview")
+async def voice_preview(body: PreviewBody):
+    """Generate a short preview of a voice speaking the given text via VoxCPM2."""
+    catalog = _load_voices_catalog()
+    voice = next((v for v in catalog if v.get("voice_id") == body.voice_id), None)
+    if not voice:
+        raise HTTPException(404, "Voice not found in catalog")
+    control = (voice.get("control_prompts") or ["clear measured speaking voice"])[0]
+
+    import subprocess
+    import tempfile
+    out_name = f"preview_{uuid.uuid4().hex[:8]}.mp3"
+    out_path = AUDIO_PREVIEW_DIR / out_name
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    text = body.text.strip() or f"Hello, I am the voice of {body.character_name or 'this character'}."
+    text = text[:300]  # keep previews short
+
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "voxcpm", "design",
+             "--text", text, "--control", control,
+             "--cfg-value", "2.0", "--inference-timesteps", "10",
+             "--output", str(out_path)],
+            capture_output=True, text=True, timeout=300,
+        )
+        if result.returncode != 0 or not out_path.exists():
+            raise RuntimeError((result.stderr or result.stdout or "VoxCPM failed")[-400:])
+        return {"success": True, "preview_url": f"/api/writing/previews/{out_name}"}
+    except subprocess.TimeoutExpired:
+        raise HTTPException(504, "Voice preview timed out (300s)")
+    except FileNotFoundError:
+        raise HTTPException(503, "VoxCPM not available — install with: pip install voxcpm")
+
+
+@router.get("/previews/{filename}")
+async def serve_preview(filename: str):
+    """Serve a generated voice preview file."""
+    from fastapi.responses import FileResponse
+    path = AUDIO_PREVIEW_DIR / filename
+    if not path.exists():
+        raise HTTPException(404, "Preview not found")
+    return FileResponse(str(path), media_type="audio/mpeg")
