@@ -50,7 +50,88 @@ async def check_comfyui_health() -> dict:
             return {"healthy": False, "error": str(e)}
 
 
-# ── ComfyUI submit scene ──────────────────────────────────────────────────
+# ── GPU capabilities / long-scene threshold ──────────────────────────────
+
+# Long-scene thresholds by total VRAM. On cards with limited VRAM the LTXAV
+# model (23.8 GB staged) spills over into dynamic offloading above a certain
+# scene length — render time increases dramatically (roughly 3x at 16 GB past
+# ~15 seconds). Thresholds are conservative: they mark the point where the
+# user should expect a big slowdown.
+def _long_scene_threshold_for_vram(vram_gb: float) -> int:
+    if vram_gb >= 30:
+        return 30
+    if vram_gb >= 22:
+        return 20
+    if vram_gb >= 14:
+        return 15  # measured: 16 GB cards slow down dramatically past 15s
+    return 10
+
+
+async def get_gpu_capabilities() -> dict:
+    """Detect GPU/VRAM from ComfyUI's /system_stats and derive the
+    long-scene warning threshold for this machine. Successful detections
+    are cached; failures are retried on the next call."""
+    global _gpu_capabilities
+    if _gpu_capabilities is not None:
+        return _gpu_capabilities
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(f"{COMFYUI_URL}/system_stats")
+            resp.raise_for_status()
+            stats = resp.json()
+        devices = stats.get("devices", [])
+        gpu_name = None
+        vram_gb = None
+        if devices:
+            dev = devices[0]
+            gpu_name = dev.get("name", "Unknown GPU")
+            vram_total = dev.get("mem", {}).get("total_vram", 0)  # bytes
+            if vram_total and vram_total > 0:
+                vram_gb = round(vram_total / (1024 ** 3), 1)
+        # Some ComfyUI builds/allocator combos report 0 total VRAM —
+        # fall back to nvidia-smi for the real number
+        if vram_gb is None:
+            vram_gb = _probe_vram_via_nvidia_smi()
+        if vram_gb is not None:
+            threshold = _long_scene_threshold_for_vram(vram_gb)
+            _gpu_capabilities = {
+                "gpu_name": gpu_name,
+                "vram_total_gb": vram_gb,
+                "long_scene_threshold": threshold,
+            }
+        else:
+            # Unknown hardware — use the middle default
+            return {
+                "gpu_name": gpu_name,
+                "vram_total_gb": None,
+                "long_scene_threshold": 15,
+            }
+    except Exception as e:
+        return {
+            "gpu_name": None,
+            "vram_total_gb": None,
+            "long_scene_threshold": 15,
+            "error": str(e),
+        }
+    return _gpu_capabilities
+
+
+def _probe_vram_via_nvidia_smi() -> float | None:
+    """Query nvidia-smi for total VRAM (GB) of the first GPU. None on failure."""
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            mib = float(result.stdout.strip().splitlines()[0])
+            return round(mib / 1024, 1)
+    except Exception:
+        pass
+    return None
+
+
+_gpu_capabilities: dict | None = None
 
 def _load_workflow() -> dict:
     with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:

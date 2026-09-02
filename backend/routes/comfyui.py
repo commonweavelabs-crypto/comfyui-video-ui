@@ -10,15 +10,16 @@ from pydantic import BaseModel
 
 import store
 from pipeline import (
-    check_comfyui_health,
-    check_prompt_status,
-    compute_scene_timing,
-    download_comfyui_output,
-    get_average_render_time,
-    get_comfyui_history,
-    get_comfyui_queue,
-    get_render_timing,
-    submit_scene_to_comfyui,
+   check_comfyui_health,
+   check_prompt_status,
+   compute_scene_timing,
+   download_comfyui_output,
+   get_average_render_time,
+   get_comfyui_history,
+   get_comfyui_queue,
+   get_gpu_capabilities,
+   get_render_timing,
+   submit_scene_to_comfyui,
 )
 from ws_manager import manager
 from config import COMFYUI_URL
@@ -43,6 +44,12 @@ class PollBody(BaseModel):
 @router.get("/health")
 async def health():
     return await check_comfyui_health()
+
+
+@router.get("/capabilities")
+async def capabilities():
+    """GPU/VRAM info + long-scene warning threshold for this machine."""
+    return await get_gpu_capabilities()
 
 
 # #3: GET /comfyui/status — frontend-friendly status format

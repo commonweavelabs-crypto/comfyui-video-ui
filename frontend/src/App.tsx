@@ -63,6 +63,14 @@ export default function App() {
   const [showExportPanel, setShowExportPanel] = useState(false)
   const [pendingSubmit, setPendingSubmit] = useState<{ sceneId: string; sceneNumber: number } | null>(null)
   const [pendingCrop, setPendingCrop] = useState<{ sceneId: string; sceneNumber: number; duration: number; audioDuration: number } | null>(null)
+  const [gpuCaps, setGpuCaps] = useState<{ gpu_name: string | null; vram_total_gb: number | null; long_scene_threshold: number } | null>(null)
+  const [pendingLongScene, setPendingLongScene] = useState<{
+    scenes: { sceneNumber: number; duration: number; id?: string }[]
+    threshold: number
+    gpuName: string | null
+    vramGb: number | null
+    onConfirm?: () => void
+  } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ sceneId: string; renderCount: number } | null>(null)
   const [pendingDeleteScript, setPendingDeleteScript] = useState<Script | null>(null)
   const [pendingDeleteRender, setPendingDeleteRender] = useState<{ sceneId: string; renderId: string; sceneNumber: number; versionIdx: number } | null>(null)
@@ -81,8 +89,13 @@ export default function App() {
     if (s.status === 'rendering' || s.status === 'queued') {
       const remaining = s.render_estimated_remaining
       if (remaining != null && remaining > 0) return total + remaining
-      // Fallback: estimate from duration (25.7s render per 1s video)
-      if (s.duration > 0) return total + 25.7 * s.duration
+      // Fallback: estimate from duration (25.7s render per 1s video), with a
+      // ~3x penalty for scenes over the GPU's long-scene threshold
+      if (s.duration > 0) {
+        const threshold = gpuCaps?.long_scene_threshold ?? 15
+        const penalty = s.duration > threshold ? 3 : 1
+        return total + 25.7 * s.duration * penalty
+      }
     }
     return total
   }, 0)
@@ -225,6 +238,8 @@ export default function App() {
     musicApi.list().then(setMusicTracks).catch(() => setMusicTracks([]))
     // Load disk usage
     diskApi.usage().then(setDiskUsage).catch(() => setDiskUsage(null))
+    // Load GPU capabilities (for long-scene warnings)
+    comfyuiApi.capabilities().then(setGpuCaps).catch(() => setGpuCaps(null))
   }, [loadScripts])
 
   // ─── ComfyUI status polling ─────────────────────────────────
@@ -402,6 +417,19 @@ export default function App() {
     [activeScript, updateScene, showToast],
   )
 
+  // Long-scene helper: scenes over the GPU-specific threshold cause dramatic
+  // render slowdowns (VRAM spillover / dynamic offloading). Returns the list
+  // of offending scenes, or empty if none / capabilities unknown.
+  const getLongScenes = useCallback(
+    (sceneList: Scene[]) => {
+      const threshold = gpuCaps?.long_scene_threshold ?? 15
+      return sceneList
+        .filter((s) => s.duration > threshold)
+        .map((s) => ({ sceneNumber: s.scene_number, duration: s.duration, id: s.id }))
+    },
+    [gpuCaps],
+  )
+
   const handleSubmitScene = useCallback(
     async (sceneId: string) => {
       if (!activeScript) return
@@ -424,10 +452,23 @@ export default function App() {
         return
       }
 
+      // Scene longer than the GPU's recommended length — warn about render time
+      const longScenes = getLongScenes([scene as Scene])
+      if (scene && longScenes.length > 0) {
+        setPendingLongScene({
+          scenes: longScenes,
+          threshold: gpuCaps?.long_scene_threshold ?? 15,
+          gpuName: gpuCaps?.gpu_name ?? null,
+          vramGb: gpuCaps?.vram_total_gb ?? null,
+          onConfirm: () => submitSceneDirect(sceneId, 'Submitting scene to ComfyUI...'),
+        })
+        return
+      }
+
       // Scene has audio (or user confirmed) — submit now
       await submitSceneDirect(sceneId, 'Submitting scene to ComfyUI...')
     },
-    [activeScript, submitSceneDirect, scenes],
+    [activeScript, submitSceneDirect, scenes, getLongScenes, gpuCaps],
   )
 
   // Submit after user confirms the no-audio warning
@@ -455,23 +496,52 @@ export default function App() {
       showToast('No ready scenes to submit', 'info')
       return
     }
-    showToast(`Submitting ${readyScenes.length} scenes to ComfyUI...`, 'info')
-    readyScenes.forEach((s) => updateScene(s.id, { status: 'queued' }))
-    try {
-      const result = await comfyuiApi.submitAll(activeScript.id)
-      if (result.errors && Object.keys(result.errors).length > 0) {
-        showToast(`${result.submitted.length} submitted, ${Object.keys(result.errors).length} errors`, 'error')
-        Object.entries(result.errors).forEach(([id, err]) => updateScene(id, { status: 'error', error_message: err }))
-      } else {
-        showToast(`${result.submitted.length} scenes submitted!`, 'success')
-      }
-      // Reload scenes to get updated statuses
-      const sceneList = await scenesApi.list(activeScript.id)
-      setScenes(sceneList)
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Failed to submit all', 'error')
+    // Long-scene warning for Submit All too
+    const longScenes = getLongScenes(readyScenes)
+    if (longScenes.length > 0) {
+      setPendingLongScene({
+        scenes: longScenes,
+        threshold: gpuCaps?.long_scene_threshold ?? 15,
+        gpuName: gpuCaps?.gpu_name ?? null,
+        vramGb: gpuCaps?.vram_total_gb ?? null,
+        onConfirm: () => { doSubmitAll(readyScenes.map((s) => s.id)) },
+      })
+      return
     }
-  }, [activeScript, scenes, updateScene, showToast])
+    doSubmitAll(readyScenes.map((s) => s.id))
+  }, [activeScript, scenes, getLongScenes, gpuCaps, showToast])
+
+  // The actual Submit All execution — extracted so the long-scene warning
+  // can gate it
+  const doSubmitAll = useCallback(
+    async (sceneIds: string[]) => {
+      if (!activeScript) return
+      showToast(`Submitting ${sceneIds.length} scenes to ComfyUI...`, 'info')
+      sceneIds.forEach((id) => updateScene(id, { status: 'queued' }))
+      try {
+        const result = await comfyuiApi.submitAll(activeScript.id)
+        if (result.errors && Object.keys(result.errors).length > 0) {
+          showToast(`${result.submitted.length} submitted, ${Object.keys(result.errors).length} errors`, 'error')
+          Object.entries(result.errors).forEach(([id, err]) => updateScene(id, { status: 'error', error_message: err }))
+        } else {
+          showToast(`${result.submitted.length} scenes submitted!`, 'success')
+        }
+        // Reload scenes to get updated statuses
+        const sceneList = await scenesApi.list(activeScript.id)
+        setScenes(sceneList)
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : 'Failed to submit all', 'error')
+      }
+    },
+    [activeScript, updateScene, showToast],
+  )
+
+  // Confirm from the long-scene warning dialog
+  const handleLongSceneConfirmed = useCallback(() => {
+    const action = pendingLongScene?.onConfirm
+    setPendingLongScene(null)
+    if (action) action()
+  }, [pendingLongScene])
 
   const handleDeleteScene = useCallback(
     (sceneId: string) => {
@@ -1094,6 +1164,46 @@ export default function App() {
                 className="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-xl transition-all"
               >
                 Crop and Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Long-scene (GPU) submit warning */}
+      {pendingLongScene && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md mx-4">
+            <div className="text-sm font-semibold text-zinc-100 mb-2">
+              {pendingLongScene.scenes.length === 1
+                ? `Scene ${pendingLongScene.scenes[0].sceneNumber} is longer than recommended`
+                : `${pendingLongScene.scenes.length} scenes are longer than recommended`}
+            </div>
+            <div className="text-xs text-zinc-400 mb-3 leading-relaxed">
+              {pendingLongScene.scenes
+                .map((s) => `Scene ${s.sceneNumber} (${s.duration}s)`)
+                .join(', ')}{' '}
+              exceed{pendingLongScene.scenes.length === 1 ? 's' : ''} the {pendingLongScene.threshold}s
+              recommendation for your GPU
+              {pendingLongScene.gpuName ? ` (${pendingLongScene.gpuName}` : ''}
+              {pendingLongScene.vramGb ? `, ${pendingLongScene.vramGb}GB VRAM)` : ')'}. Rendering these scenes
+              causes VRAM spillover and can triple the render time.
+            </div>
+            <div className="text-xs text-zinc-500 mb-4">
+              Submit anyway, or cancel to shorten the scenes first?
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPendingLongScene(null)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLongSceneConfirmed}
+                className="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-xl transition-all"
+              >
+                Submit Anyway
               </button>
             </div>
           </div>

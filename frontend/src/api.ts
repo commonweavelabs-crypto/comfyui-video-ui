@@ -206,6 +206,15 @@ export const scenesApi = {
 export const comfyuiApi = {
   status: () => request<ComfyUIStatus>('/comfyui/status'),
 
+  // GPU/VRAM info + long-scene warning threshold for this machine
+  capabilities: () =>
+    request<{
+      gpu_name: string | null
+      vram_total_gb: number | null
+      long_scene_threshold: number
+      error?: string
+    }>('/comfyui/capabilities'),
+
   submitScene: (scriptId: string, sceneId: string) =>
     request<SubmitSceneResponse>(
       `/comfyui/submit`,
