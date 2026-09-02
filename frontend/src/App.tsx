@@ -62,6 +62,7 @@ export default function App() {
   const [selectedMusicTrack, setSelectedMusicTrack] = useState<string | null>(null)
   const [showExportPanel, setShowExportPanel] = useState(false)
   const [pendingSubmit, setPendingSubmit] = useState<{ sceneId: string; sceneNumber: number } | null>(null)
+  const [pendingCrop, setPendingCrop] = useState<{ sceneId: string; sceneNumber: number; duration: number; audioDuration: number } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ sceneId: string; renderCount: number } | null>(null)
   const [pendingDeleteScript, setPendingDeleteScript] = useState<Script | null>(null)
   const [pendingDeleteRender, setPendingDeleteRender] = useState<{ sceneId: string; renderId: string; sceneNumber: number; versionIdx: number } | null>(null)
@@ -364,7 +365,7 @@ export default function App() {
 
   const handleDurationChange = useCallback(
     async (sceneId: string, duration: number) => {
-      const clamped = Math.max(5, Math.min(15, duration))
+      const clamped = Math.max(5, duration)
       updateScene(sceneId, { duration: clamped })
       if (activeScript) {
         try {
@@ -377,45 +378,12 @@ export default function App() {
     [activeScript, updateScene],
   )
 
-  const handleSubmitScene = useCallback(
-    async (sceneId: string) => {
+  // Shared submit body — performs the actual ComfyUI submission
+  const submitSceneDirect = useCallback(
+    async (sceneId: string, toastMsg: string) => {
       if (!activeScript) return
-
-      // Check if scene has audio — if not, show warning before submitting
-      const scene = scenes.find((s) => s.id === sceneId)
-      if (scene && !scene.audio_url) {
-        setPendingSubmit({ sceneId, sceneNumber: scene.scene_number })
-        return
-      }
-
-      // Scene has audio (or user confirmed) — submit now
       updateScene(sceneId, { status: 'queued' })
-      showToast('Submitting scene to ComfyUI...', 'info')
-      try {
-        const result = await comfyuiApi.submitScene(activeScript.id, sceneId)
-        updateScene(sceneId, {
-          status: result.status,
-          comfyui_prompt_id: result.comfyui_prompt_id,
-        })
-        showToast(`Scene submitted to ComfyUI`, 'success')
-      } catch (e) {
-        updateScene(sceneId, {
-          status: 'error',
-          error_message: e instanceof Error ? e.message : 'Submit failed',
-        })
-        showToast(e instanceof Error ? e.message : 'Failed to submit scene', 'error')
-      }
-    },
-    [activeScript, updateScene, showToast, scenes],
-  )
-
-  // Submit after user confirms the no-audio warning
-  const handleSubmitSceneConfirmed = useCallback(
-    async (sceneId: string) => {
-      if (!activeScript) return
-      setPendingSubmit(null)
-      updateScene(sceneId, { status: 'queued' })
-      showToast('Submitting scene to ComfyUI (no audio)...', 'info')
+      showToast(toastMsg, 'info')
       try {
         const result = await comfyuiApi.submitScene(activeScript.id, sceneId)
         updateScene(sceneId, {
@@ -432,6 +400,52 @@ export default function App() {
       }
     },
     [activeScript, updateScene, showToast],
+  )
+
+  const handleSubmitScene = useCallback(
+    async (sceneId: string) => {
+      if (!activeScript) return
+
+      // Check if scene has audio — if not, show warning before submitting
+      const scene = scenes.find((s) => s.id === sceneId)
+      if (scene && !scene.audio_url) {
+        setPendingSubmit({ sceneId, sceneNumber: scene.scene_number })
+        return
+      }
+
+      // Audio longer than duration — warn that audio will be cropped
+      if (scene?.audio_duration && scene.audio_duration > scene.duration + 0.5) {
+        setPendingCrop({
+          sceneId,
+          sceneNumber: scene.scene_number,
+          duration: scene.duration,
+          audioDuration: scene.audio_duration,
+        })
+        return
+      }
+
+      // Scene has audio (or user confirmed) — submit now
+      await submitSceneDirect(sceneId, 'Submitting scene to ComfyUI...')
+    },
+    [activeScript, submitSceneDirect, scenes],
+  )
+
+  // Submit after user confirms the no-audio warning
+  const handleSubmitSceneConfirmed = useCallback(
+    async (sceneId: string) => {
+      setPendingSubmit(null)
+      await submitSceneDirect(sceneId, 'Submitting scene to ComfyUI (no audio)...')
+    },
+    [submitSceneDirect],
+  )
+
+  // Submit after user confirms the crop warning
+  const handleSubmitCropConfirmed = useCallback(
+    async (sceneId: string) => {
+      setPendingCrop(null)
+      await submitSceneDirect(sceneId, 'Submitting scene to ComfyUI (audio will be cropped)...')
+    },
+    [submitSceneDirect],
   )
 
   const handleSubmitAll = useCallback(async () => {
@@ -666,8 +680,18 @@ export default function App() {
       showToast('Uploading audio...', 'info')
       try {
         const updated = await scenesApi.uploadAudio(activeScript.id, sceneId, file)
-        updateScene(sceneId, { audio_url: updated.audio_url })
-        showToast('Audio uploaded', 'success')
+        updateScene(sceneId, {
+          audio_url: updated.audio_url,
+          audio_duration: updated.audio_duration ?? null,
+          // Backend auto-adjusts duration to the audio length (rounded up)
+          ...(updated.duration ? { duration: updated.duration } : {}),
+        })
+        const dur = updated.audio_duration
+        if (dur && updated.duration) {
+          showToast(`Audio uploaded — duration adjusted to ${updated.duration}s to fit audio`, 'success')
+        } else {
+          showToast('Audio uploaded', 'success')
+        }
       } catch (e) {
         showToast(e instanceof Error ? e.message : 'Failed to upload audio', 'error')
       }
@@ -1037,6 +1061,39 @@ export default function App() {
                 className="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-xl transition-all"
               >
                 Submit Without Audio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audio-crop submit warning */}
+      {pendingCrop && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md mx-4">
+            <div className="text-sm font-semibold text-zinc-100 mb-2">
+              Audio will be cropped in Scene {pendingCrop.sceneNumber}
+            </div>
+            <div className="text-xs text-zinc-400 mb-4 leading-relaxed">
+              The audio is {Math.ceil(pendingCrop.audioDuration)}s but you set the duration to {pendingCrop.duration}s.
+              The audio will be trimmed to {pendingCrop.duration}s — anything after that point is cut off. The video
+              length matches the duration field.
+            </div>
+            <div className="text-xs text-zinc-500 mb-4">
+              Continue with cropping, or cancel to adjust the duration first?
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPendingCrop(null)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSubmitCropConfirmed(pendingCrop.sceneId)}
+                className="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-xl transition-all"
+              >
+                Crop and Submit
               </button>
             </div>
           </div>

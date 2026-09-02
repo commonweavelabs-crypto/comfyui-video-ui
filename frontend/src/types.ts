@@ -31,6 +31,7 @@ export interface Scene {
   video_url: string | null
   video_filename: string | null
   audio_url: string | null
+  audio_duration: number | null
   voice_id: string | null
   feedback: string
   error_message: string | null

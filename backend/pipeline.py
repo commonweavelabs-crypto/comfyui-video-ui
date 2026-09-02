@@ -135,6 +135,17 @@ async def submit_scene_to_comfyui(scene: dict, script_id: str) -> dict:
             return {"success": False, "error": "Failed to generate silent audio for scene without audio input. Please add audio to the scene or ensure ffmpeg is available."}
 
     duration = _get_audio_duration(audio_path)
+    # Honor the scene's duration field: if the user set a duration shorter than
+    # the audio, the workflow's TrimAudioDuration node (340:332 reads 340:331)
+    # crops the audio — the video renders at the user's chosen length.
+    # If duration >= audio length, keep the audio at its full length.
+    if scene.get("duration") is not None:
+        try:
+            requested = float(scene["duration"])
+            if 0 < requested < duration:
+                duration = requested
+        except (TypeError, ValueError):
+            pass
     frame_count = int(duration * 24)
 
     payload = copy.deepcopy(workflow)

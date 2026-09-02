@@ -669,7 +669,6 @@ export default function SceneCard({
             <input
               type="number"
               min={5}
-              max={15}
               value={scene.duration}
               onChange={(e) => onDurationChange(scene.id, Number(e.target.value))}
               className="w-12 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-0.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-700 text-center"

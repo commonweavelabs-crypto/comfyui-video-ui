@@ -24,7 +24,7 @@
     {
       "scene_id": "1",
       "prompt": "",
-      "duration": 14,
+      "duration": 21,
       "frame_filename": "charles-full-body-back-to-camera.png",
       "frame_id": "f09",
       "audio_filename": "",
@@ -38,8 +38,9 @@
       "broll_id": "",
       "broll_volume": 0.0,
       "created": "2026-08-25T18:42:37.130711+00:00",
-      "updated": "2026-09-01T23:14:42.870640+00:00",
-      "scene_number": 2
+      "updated": "2026-09-02T00:03:54.032954+00:00",
+      "scene_number": 2,
+      "audio_duration": 20.832
     },
     {
       "scene_id": "5",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import shutil
 from pathlib import Path
 
@@ -108,6 +109,9 @@ def _enrich_scene(script_id: str, scene: dict) -> dict:
     s["dialogue"] = s.get("narration", "")
     s["voice_id"] = s.get("audio_speaker", "")
     s["error_message"] = s.get("error", None)
+    # Audio duration — probed once at upload, used by the frontend for the
+    # "audio will be cropped" submit warning and duration display
+    s["audio_duration"] = s.get("audio_duration", None)
     # Render timing fields — pass through if set by poll logic, default to 0/None
     s["render_progress"] = s.get("render_progress", 0)
     s["render_elapsed"] = s.get("render_elapsed", None)
@@ -251,7 +255,25 @@ async def upload_scene_audio(script_id: str, scene_id: str, file: UploadFile = F
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    updated = store.update_scene(script_id, scene_id, {"audio_filename": file.filename})
+    # Probe real audio duration (audio drives the video length by default)
+    audio_duration = None
+    try:
+        from pipeline import _get_audio_duration
+        audio_duration = _get_audio_duration(str(dest))
+    except Exception:
+        audio_duration = None
+
+    # Auto-adjust duration to the audio length: round UP to the whole second
+    # so the video always covers the full audio (e.g. 20.83s -> 21s).
+    duration_update = {}
+    if audio_duration and audio_duration > 0:
+        duration_update = {"duration": max(5, math.ceil(audio_duration))}
+
+    updated = store.update_scene(script_id, scene_id, {
+        "audio_filename": file.filename,
+        "audio_duration": audio_duration,
+        **duration_update,
+    })
     enriched = _enrich_scene(script_id, updated)
     await manager.broadcast({
         "type": "scene_update",
