@@ -9,6 +9,7 @@ import FrameCatalog from './components/FrameCatalog'
 import MusicPanel from './components/MusicPanel'
 import ExportPanel from './components/ExportPanel'
 import WorkflowWizard from './components/WorkflowWizard'
+import Landing from './components/Landing'
 
 type SidebarTab = 'scripts' | 'frames' | 'music'
 
@@ -58,6 +59,7 @@ export default function App() {
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' | 'info' } | null>(null)
   const [showWizard, setShowWizard] = useState(false)
   const [wizardScript, setWizardScript] = useState<Script | null>(null)
+  const [showProjectsPanel, setShowProjectsPanel] = useState(false)
   const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([])
   const [selectedMusicTrack, setSelectedMusicTrack] = useState<string | null>(null)
   const [showExportPanel, setShowExportPanel] = useState(false)
@@ -973,12 +975,29 @@ export default function App() {
       />
 
       <div className="flex flex-1 overflow-hidden">
+        {(!activeScript && !showProjectsPanel) ? (
+          /* ─── Landing: clean, no sidebar ─── */
+          <Landing
+            onBrowseProjects={() => setShowProjectsPanel(true)}
+            onProjectCreated={(script) => {
+              setShowProjectsPanel(false)
+              handleSelectScript(script)
+            }}
+            onScriptFormatted={(result) => {
+              // TODO(M5a-5): open the doc view with the formatted script.
+              // For now, surface the parse result so the flow is testable.
+              showToast(`Formatted "${result.title}" — ${result.characters.length} characters, ${Array.isArray(result.lines) ? result.lines.length : 0} lines (doc view coming next)`, 'info')
+            }}
+            showToast={showToast}
+          />
+        ) : (
+        <>
         {/* Sidebar */}
         <aside className="w-80 flex-shrink-0 border-r border-zinc-800 bg-zinc-950 flex flex-col">
           {/* Tab switcher */}
           <div className="flex gap-1 p-3 border-b border-zinc-800">
             <button
-              onClick={() => setSidebarTab('scripts')}
+              onClick={() => { setSidebarTab('scripts'); setShowProjectsPanel(true) }}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                 sidebarTab === 'scripts'
                   ? 'bg-zinc-800 text-zinc-100'
@@ -1064,6 +1083,8 @@ export default function App() {
             onReorder={handleReorder}
             />
         </main>
+        </>
+        )}
       </div>
 
       {/* Export panel overlay */}

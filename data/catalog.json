@@ -44,6 +44,15 @@
       "created": "2026-08-22T23:34:15.618435+00:00",
       "updated": "2026-08-24T00:41:33.659671+00:00",
       "scene_count": 2
+    },
+    {
+      "script_id": "20260901-51009489",
+      "title": "Manual Test Project",
+      "tags": [],
+      "status": "draft",
+      "created": "2026-09-02T02:05:41.762399+00:00",
+      "updated": "2026-09-02T02:05:41.762399+00:00",
+      "scene_count": 0
     }
   ],
   "scenes": {},
