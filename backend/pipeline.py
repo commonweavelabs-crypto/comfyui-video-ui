@@ -369,6 +369,7 @@ async def check_prompt_status(prompt_id: str) -> dict:
                 continue
             status_data = data.get("status", {})
             completed = status_data.get("completed", False)
+            status_str = str(status_data.get("status_str", "")).lower()
             outputs = data.get("outputs", {})
 
             # Extract output files
@@ -386,6 +387,15 @@ async def check_prompt_status(prompt_id: str) -> dict:
                                         "node_id": node_id,
                                     })
 
+            if status_str == "error":
+                # Terminal state: the prompt executed and failed. Never report
+                # this as "rendering" — that orphans the scene forever.
+                return {
+                    "status": "error",
+                    "prompt_id": pid,
+                    "error": _extract_history_error(status_data),
+                    "files": files,
+                }
             if completed and files:
                 return {"status": "complete", "prompt_id": pid, "files": files}
             elif not completed:
@@ -417,7 +427,28 @@ async def check_prompt_status(prompt_id: str) -> dict:
         # Something is in queue but not us — we might have just been picked up
         # or are between history updates. Default to queued, not unknown.
         return {"status": "queued", "prompt_id": prompt_id}
-    return {"status": "queued", "prompt_id": prompt_id}  # default to queued, not unknown
+    # Not in history AND not in the queue. This is either (a) ComfyUI was
+    # restarted since submit (its history is in-memory), or (b) the prompt
+    # was evicted/lost. Polling "queued" forever orphans the scene — surface
+    # it as a resolvable lost-state so the caller can offer a resubmit.
+    return {
+        "status": "lost",
+        "prompt_id": prompt_id,
+        "error": "Prompt not found in ComfyUI history or queue (server may have restarted since submit). Resubmit to render.",
+    }
+
+
+def _extract_history_error(status_data: dict) -> str:
+    """Pull a human-readable error message out of a ComfyUI history status blob."""
+    messages = status_data.get("messages") or []
+    for msg in messages:
+        if isinstance(msg, (list, tuple)) and len(msg) >= 2:
+            event, payload = msg[0], msg[1]
+            if str(event).lower() == "execution_error" and isinstance(payload, dict):
+                node_type = payload.get("node_type", "unknown node")
+                err = payload.get("exception_message") or payload.get("error", "")
+                return f"{node_type}: {err}"[:300]
+    return "Render failed (execution error in ComfyUI history)"
 
 
 # ── Render timing ──────────────────────────────────────────────────────────

@@ -84,7 +84,21 @@ class ConnectionManager:
                         if pid and scene.get("status") in ("queued", "rendering"):
                             result = await check_prompt_status(pid)
                             new_status = result.get("status")
-                            if new_status != scene.get("status"):
+                            if new_status in ("error", "lost") and new_status != scene.get("status"):
+                                # Terminal failure — resolve the scene instead of
+                                # polling forever (pollable-handle contract).
+                                from store import update_scene
+                                from routes.scenes import _enrich_scene
+                                updated = update_scene(sid, str(scene["scene_id"]), {
+                                    "status": "error",
+                                    "error": result.get("error", "Render failed"),
+                                })
+                                await self.broadcast({
+                                    "type": "scene_update",
+                                    "script_id": sid,
+                                    "scene": _enrich_scene(sid, updated),
+                                })
+                            elif new_status != scene.get("status"):
                                 from store import update_scene
                                 from routes.scenes import _enrich_scene
                                 updated = update_scene(sid, str(scene["scene_id"]), {

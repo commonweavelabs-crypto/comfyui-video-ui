@@ -372,10 +372,18 @@ async def _do_poll(script_id: str) -> dict:
                     "script_id": script_id,
                     "scene": _enrich_scene(script_id, scene),
                 })
-            elif new_status == "error":
+            elif new_status in ("error", "lost"):
+                # Terminal failure states — mark error so the scene can be
+                # resubmitted instead of polling forever (pollable-handle contract).
                 scene = store.update_scene(script_id, sid, {
                     "status": "error",
                     "error": status_result.get("error", "Render failed"),
+                })
+                from routes.scenes import _enrich_scene
+                await manager.broadcast({
+                    "type": "scene_update",
+                    "script_id": script_id,
+                    "scene": _enrich_scene(script_id, scene),
                 })
 
         updated_scenes.append(scene or store.get_scene(script_id, sid))
