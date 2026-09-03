@@ -45,6 +45,8 @@ The official server's 40 tools validate a pattern our backend should adopt:
   checks against `/models/<folder>` with disk-scan fallback for the two shared model
   dirs. Returns {assets, missing, all_available}. Verified live: 5/5 present;
   negative path flags a fake checkpoint. Frontend badge still TODO.
+  **Frontend DONE (11460ba):** amber "⚠ N missing assets" header badge (only when
+  missing non-empty), click expands filename list.
 - **[backend] Log tailing as a first-class tool** (`get_logs`). Feature: replace the
   removed debug overlay with a collapsible "backend log" drawer fed by a
   `/api/comfyui/logs` route — shown on failure, hidden otherwise.
@@ -52,6 +54,8 @@ The official server's 40 tools validate a pattern our backend should adopt:
   clamped 1k–200k) tails ComfyUI's `/internal/logs`, returns {logs, truncated}.
   Verified live — captured a real ERROR + invalid-prompt block. Frontend drawer
   UI still TODO.
+  **Frontend DONE (11460ba):** "Logs" header button opens collapsible drawer
+  (mono pre, Refresh/Close); verified headless with real log lines, no JS errors.
 - **[backend] Slot-level workflow editing** (`list_workflow_slots`, `set_workflow_slot`,
   `validate_workflow`, `vary_workflow`): templates are parameterized by slot address
   (`6.text`) or name. Our WorkflowWizard can expose named slots instead of raw JSON.
