@@ -29,6 +29,10 @@ The official server's 40 tools validate a pattern our backend should adopt:
   (`job status`), collectable (`fetch_outputs`), cancellable (`job cancel`). Never
   orphan a render on timeout. Our `pipeline.get_render_timing`/`check_prompt_status`
   already half-does this; make the timeout path return a pollable handle too.
+  **DONE (ce3a5f8, 2026-09-02):** errored history prompts → terminal `error`
+  (was fake `rendering` forever); prompt in neither history nor queue → terminal
+  `lost` + resubmit hint (was fake `queued` forever); both poll callers treat
+  error/lost as terminal and broadcast. Verified live against port 8000.
 - **[backend] Spend gate**: any workflow embedding paid partner nodes fails CLOSED
   unless `confirm_spend=True`; the client is asked per call. If we ever add
   API-node templates, copy this — no paid call without explicit UI confirmation.
