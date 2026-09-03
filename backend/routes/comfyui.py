@@ -16,9 +16,11 @@ from pipeline import (
    download_comfyui_output,
    get_average_render_time,
    get_comfyui_history,
+   get_comfyui_logs,
    get_comfyui_queue,
    get_gpu_capabilities,
    get_render_timing,
+   get_workflow_assets_status,
    submit_scene_to_comfyui,
 )
 from ws_manager import manager
@@ -147,6 +149,21 @@ async def render_timing(prompt_id: str):
 async def render_stats():
     """Get average render time and historical data."""
     return await get_average_render_time()
+
+
+# Backend log tail — for the frontend log drawer (shown on failure)
+@router.get("/logs")
+async def comfyui_logs(bytes: int = 20000):
+    """Tail of the ComfyUI server log via /internal/logs."""
+    return await get_comfyui_logs(tail_bytes=min(max(bytes, 1000), 200000))
+
+
+# Workflow asset introspection — pre-submit missing-asset check
+@router.get("/assets")
+async def workflow_assets():
+    """Check every model asset the video workflow loads against the live
+    ComfyUI + shared model dirs. Frontend dims submit / warns before run."""
+    return await get_workflow_assets_status()
 
 
 # ── ComfyUI output cleanup (file hygiene) ────────────────────────────────────

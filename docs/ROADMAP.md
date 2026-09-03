@@ -40,9 +40,18 @@ The official server's 40 tools validate a pattern our backend should adopt:
   templates the *live install* actually has (custom nodes included). Roadmap: our
   `/api/comfyui/capabilities` should also list available checkpoints/loras and the
   UI should dim/warn on missing assets *before* submit, not fail at run time.
+  **DONE (2026-09-02):** `GET /api/comfyui/assets` — extracts every model asset the
+  workflow loads (loader class→folder map incl. custom `latent_upscale_models`),
+  checks against `/models/<folder>` with disk-scan fallback for the two shared model
+  dirs. Returns {assets, missing, all_available}. Verified live: 5/5 present;
+  negative path flags a fake checkpoint. Frontend badge still TODO.
 - **[backend] Log tailing as a first-class tool** (`get_logs`). Feature: replace the
   removed debug overlay with a collapsible "backend log" drawer fed by a
   `/api/comfyui/logs` route — shown on failure, hidden otherwise.
+  **DONE (backend, 2026-09-02):** `GET /api/comfyui/logs?bytes=N` (default 20k,
+  clamped 1k–200k) tails ComfyUI's `/internal/logs`, returns {logs, truncated}.
+  Verified live — captured a real ERROR + invalid-prompt block. Frontend drawer
+  UI still TODO.
 - **[backend] Slot-level workflow editing** (`list_workflow_slots`, `set_workflow_slot`,
   `validate_workflow`, `vary_workflow`): templates are parameterized by slot address
   (`6.text`) or name. Our WorkflowWizard can expose named slots instead of raw JSON.

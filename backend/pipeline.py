@@ -451,6 +451,134 @@ def _extract_history_error(status_data: dict) -> str:
     return "Render failed (execution error in ComfyUI history)"
 
 
+# ── Log tailing (roadmap: first-class log drawer) ──────────────────────────
+
+async def get_comfyui_logs(tail_bytes: int = 20000) -> dict:
+    """Fetch the ComfyUI server's raw log tail via /internal/logs.
+
+    Returns {logs: str, truncated: bool, error?: str}. The route layers the
+    level filtering; here we just move bytes. The frontend log drawer shows
+    this on failure, hidden otherwise.
+    """
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            resp = await client.get(f"{COMFYUI_URL}/internal/logs")
+            if resp.status_code != 200:
+                return {"logs": "", "truncated": False,
+                        "error": f"HTTP {resp.status_code}"}
+            raw = resp.json()
+            # /internal/logs returns a JSON string (raw text), not an object
+            text = raw if isinstance(raw, str) else json.dumps(raw)
+            if len(text.encode("utf-8")) > tail_bytes:
+                text = text[-tail_bytes:]
+                truncated = True
+            else:
+                truncated = False
+            return {"logs": text, "truncated": truncated}
+        except Exception as e:
+            return {"logs": "", "truncated": False, "error": str(e)}
+
+
+# ── Workflow asset introspection (roadmap: warn on missing assets pre-submit) ──
+
+# Loader node class_type -> ComfyUI /models/<folder> endpoint. Custom loader
+# classes not listed here fall back to scanning the model dirs on disk.
+_LOADER_CLASS_TO_FOLDER = {
+    "CheckpointLoaderSimple": "checkpoints",
+    "LoraLoader": "loras",
+    "LoraLoaderModelOnly": "loras",
+    "VAELoader": "vae",
+    "CLIPLoader": "text_encoders",
+    "CLIPLoaderGGUF": "text_encoders",
+    "UNETLoader": "diffusion_models",
+    "LatentUpscaleModelLoader": "latent_upscale_models",
+}
+
+
+def _collect_workflow_assets(workflow: dict) -> list[dict]:
+    """Extract every model asset the workflow loads: [{node_id, class_type,
+    filename, folder}]. Only static string inputs that look like filenames."""
+    _LOADER_HINTS = ("checkpoint", "lora", "vae", "clip", "unet", "upscale",
+                     "model", "diffusers")
+    _MODEL_EXTS = (".safetensors", ".ckpt", ".pt", ".sft", ".gguf")
+    assets = []
+    for node_id, node in workflow.items():
+        if not isinstance(node, dict):
+            continue
+        ct = node.get("class_type", "")
+        if not any(h in ct.lower() for h in _LOADER_HINTS):
+            continue
+        for key, val in node.get("inputs", {}).items():
+            if (isinstance(val, str) and val.lower().endswith(_MODEL_EXTS)):
+                assets.append({
+                    "node_id": str(node_id),
+                    "class_type": ct,
+                    "filename": val,
+                    "folder": _LOADER_CLASS_TO_FOLDER.get(ct, ""),
+                })
+    return assets
+
+
+async def get_workflow_assets_status() -> dict:
+    """Check every asset the video workflow needs against the live ComfyUI.
+
+    Returns {assets: [{node_id, class_type, filename, folder, available}],
+    missing: [filenames], all_available: bool}. Uses /models/<folder> when a
+    folder is known; otherwise scans the shared model dirs on disk so custom
+    loader folders (e.g. latent_upscale_models) don't produce false 'missing'.
+    """
+    try:
+        workflow = _load_workflow()
+    except Exception as e:
+        return {"assets": [], "missing": [], "all_available": False,
+                "error": f"Cannot load workflow: {e}"}
+
+    assets = _collect_workflow_assets(workflow)
+    if not assets:
+        return {"assets": [], "missing": [], "all_available": True}
+
+    # Query each ComfyUI models endpoint once
+    folders = {a["folder"] for a in assets if a["folder"]}
+    remote_lists: dict[str, set] = {}
+    async with httpx.AsyncClient(timeout=10) as client:
+        for folder in folders:
+            try:
+                resp = await client.get(f"{COMFYUI_URL}/models/{folder}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    remote_lists[folder] = set(data) if isinstance(data, list) else set()
+            except Exception:
+                pass  # endpoint missing → fall through to disk scan
+
+    # Fallback: scan the model dirs on disk for assets whose folder is unknown
+    # or whose endpoint didn't resolve the filename (subfolder paths etc.)
+    def _scan_disk(filename: str) -> bool:
+        roots = [Path(r) for r in (
+            "C:/Users/Guilherme/Documents/ComfyUI/models",
+            "C:/Users/Guilherme/ComfyUI-Shared/models",
+        )]
+        for root in roots:
+            if not root.exists():
+                continue
+            if any(root.rglob(filename)):
+                return True
+        return False
+
+    for a in assets:
+        folder_list = remote_lists.get(a["folder"], set()) if a["folder"] else set()
+        if a["filename"] in folder_list:
+            a["available"] = True
+        else:
+            a["available"] = _scan_disk(a["filename"])
+
+    missing = [a["filename"] for a in assets if not a["available"]]
+    return {
+        "assets": assets,
+        "missing": missing,
+        "all_available": not missing,
+    }
+
+
 # ── Render timing ──────────────────────────────────────────────────────────
 
 # Baseline: ~6 min (360s) for 14s scenes, ~2.6 min (156s) for 3s scenes.
