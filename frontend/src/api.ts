@@ -269,6 +269,27 @@ export const comfyuiApi = {
       method: 'POST',
       body: JSON.stringify({ older_than_days: olderThanDays }),
     }),
+
+  // Workflow asset introspection — pre-submit missing-asset check
+  assets: () =>
+    request<{
+      assets: Array<{
+        node_id: string
+        class_type: string
+        filename: string
+        folder: string
+        available: boolean
+      }>
+      missing: string[]
+      all_available: boolean
+      error?: string
+    }>('/comfyui/assets'),
+
+  // Backend log tail — for the log drawer (shown on failure)
+  logs: (bytes: number = 20000) =>
+    request<{ logs: string; truncated: boolean; error?: string }>(
+      `/comfyui/logs?bytes=${bytes}`,
+    ),
 }
 
 // ─── Frame Catalog ──────────────────────────────────────────

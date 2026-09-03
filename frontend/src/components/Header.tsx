@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import type { ComfyUIStatus } from '../types'
+import { comfyuiApi } from '../api'
 
 interface HeaderProps {
   comfyuiStatus: ComfyUIStatus | null
@@ -10,6 +12,12 @@ interface HeaderProps {
   onDiskUsageClick: () => void
   onCleanupOutputs: () => void
   cleaningOutputs: boolean
+}
+
+interface AssetsStatus {
+  missing: string[]
+  all_available: boolean
+  error?: string
 }
 
 export default function Header({
@@ -27,6 +35,52 @@ export default function Header({
   const queueInfo = comfyuiStatus
     ? `${comfyuiStatus.queue_running} running · ${comfyuiStatus.queue_remaining} queued`
     : '—'
+
+  // ── Asset introspection (missing-asset badge) ──
+  const [assetsStatus, setAssetsStatus] = useState<AssetsStatus | null>(null)
+  const [assetsOpen, setAssetsOpen] = useState(false)
+
+  useEffect(() => {
+    if (!connected) return
+    let cancelled = false
+    comfyuiApi
+      .assets()
+      .then((r) => {
+        if (!cancelled) setAssetsStatus(r)
+      })
+      .catch(() => {
+        if (!cancelled) setAssetsStatus(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [connected])
+
+  const missingCount = assetsStatus?.missing.length ?? 0
+
+  // ── Log drawer ──
+  const [logsOpen, setLogsOpen] = useState(false)
+  const [logsData, setLogsData] = useState<string>('')
+  const [logsLoading, setLogsLoading] = useState(false)
+  const [logsError, setLogsError] = useState<string | null>(null)
+
+  const fetchLogs = () => {
+    setLogsLoading(true)
+    setLogsError(null)
+    comfyuiApi
+      .logs(40000)
+      .then((r) => {
+        if (r.error) setLogsError(r.error)
+        else setLogsData(r.logs)
+      })
+      .catch((e) => setLogsError(String(e)))
+      .finally(() => setLogsLoading(false))
+  }
+
+  const toggleLogs = () => {
+    if (!logsOpen) fetchLogs()
+    setLogsOpen((v) => !v)
+  }
 
   // Format total queue time estimate
   const queueTimeText = queueTimeEstimate != null && queueTimeEstimate > 0
@@ -83,6 +137,17 @@ export default function Header({
             </div>
           )}
 
+          {/* Missing assets badge — only when the workflow needs something absent */}
+          {connected && missingCount > 0 && (
+            <button
+              onClick={() => setAssetsOpen((v) => !v)}
+              className="px-4 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-400 font-mono tracking-[0.3px] hover:border-amber-500/50 transition-all"
+              title="Model assets required by the workflow are missing — click for details"
+            >
+              ⚠ {missingCount} missing asset{missingCount > 1 ? 's' : ''}
+            </button>
+          )}
+
           {/* Disk usage indicator */}
           {diskSizeFormatted && (
             <button
@@ -104,6 +169,19 @@ export default function Header({
             {cleaningOutputs ? 'Cleaning...' : 'Clean Outputs'}
           </button>
 
+          {/* Backend log drawer toggle */}
+          <button
+            onClick={toggleLogs}
+            className={`px-4 py-1.5 rounded-xl text-sm transition-all border ${
+              logsOpen
+                ? 'bg-zinc-800 border-zinc-700 text-zinc-200'
+                : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300'
+            }`}
+            title="Show ComfyUI backend log tail"
+          >
+            Logs
+          </button>
+
           {/* Connection pill */}
           <div
             className={`px-4 py-1.5 rounded-xl text-sm font-mono tracking-[0.5px] border flex items-center gap-2 ${
@@ -121,6 +199,57 @@ export default function Header({
           </div>
         </div>
       </div>
+
+      {/* Missing-assets detail panel */}
+      {assetsOpen && missingCount > 0 && (
+        <div className="px-6 pb-3">
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 text-sm">
+            <div className="text-amber-400 font-semibold mb-2">
+              {missingCount} model asset{missingCount > 1 ? 's' : ''} missing —
+              renders will fail until downloaded
+            </div>
+            <ul className="text-zinc-400 font-mono text-xs space-y-1">
+              {assetsStatus!.missing.map((m) => (
+                <li key={m}>· {m}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Backend log drawer */}
+      {logsOpen && (
+        <div className="px-6 pb-3">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800">
+              <span className="text-xs font-semibold text-zinc-400 tracking-[0.5px]">
+                COMFYUI BACKEND LOG
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={fetchLogs}
+                  className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                >
+                  {logsLoading ? 'Loading…' : 'Refresh'}
+                </button>
+                <button
+                  onClick={() => setLogsOpen(false)}
+                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <pre className="max-h-80 overflow-auto px-4 py-3 text-[11px] leading-relaxed font-mono text-zinc-400 whitespace-pre-wrap">
+              {logsError
+                ? `Failed to fetch logs: ${logsError}`
+                : logsLoading && !logsData
+                  ? 'Loading…'
+                  : logsData || 'No log output'}
+            </pre>
+          </div>
+        </div>
+      )}
     </header>
   )
 }
