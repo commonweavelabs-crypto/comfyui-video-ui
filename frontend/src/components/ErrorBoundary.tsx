@@ -38,10 +38,10 @@ export default class ErrorBoundary extends Component<Props, State> {
           padding: '2rem',
           textAlign: 'center',
         }}>
-          <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#818cf8' }}>
+          <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--color-brand-400)' }}>
             Something went wrong
           </h1>
-          <p style={{ color: '#a1a1aa', marginBottom: '1rem', maxWidth: '400px' }}>
+          <p style={{ color: 'var(--color-zinc-400)', marginBottom: '1rem', maxWidth: '400px' }}>
             {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
           <button

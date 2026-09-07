@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ComfyUIStatus } from '../types'
 import { comfyuiApi } from '../api'
+import type { ThemeMode } from '../theme'
 
 interface HeaderProps {
   comfyuiStatus: ComfyUIStatus | null
@@ -12,6 +13,8 @@ interface HeaderProps {
   onDiskUsageClick: () => void
   onCleanupOutputs: () => void
   cleaningOutputs: boolean
+  theme: ThemeMode
+  onToggleTheme: () => void
 }
 
 interface AssetsStatus {
@@ -30,6 +33,8 @@ export default function Header({
   onDiskUsageClick,
   onCleanupOutputs,
   cleaningOutputs,
+  theme,
+  onToggleTheme,
 }: HeaderProps) {
   const connected = comfyuiStatus?.connected ?? false
   const queueInfo = comfyuiStatus
@@ -167,6 +172,15 @@ export default function Header({
             title="Send ComfyUI output files to Recycle Bin"
           >
             {cleaningOutputs ? 'Cleaning...' : 'Clean Outputs'}
+          </button>
+
+          {/* Theme toggle */}
+          <button
+            onClick={onToggleTheme}
+            className="px-4 py-1.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-sm text-zinc-400 hover:border-zinc-700 hover:text-zinc-300 transition-all"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? '☀ Light' : '☾ Dark'}
           </button>
 
           {/* Backend log drawer toggle */}

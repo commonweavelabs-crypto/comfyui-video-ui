@@ -11,6 +11,7 @@ import ExportPanel from './components/ExportPanel'
 import WorkflowWizard from './components/WorkflowWizard'
 import Landing from './components/Landing'
 import ScriptDoc, { type ScriptDocData } from './components/ScriptDoc'
+import { useTheme } from './theme'
 
 type SidebarTab = 'scripts' | 'frames' | 'music'
 
@@ -78,6 +79,9 @@ export default function App() {
   const [pendingDelete, setPendingDelete] = useState<{ sceneId: string; renderCount: number } | null>(null)
   const [pendingDeleteScript, setPendingDeleteScript] = useState<Script | null>(null)
   const [pendingDeleteRender, setPendingDeleteRender] = useState<{ sceneId: string; renderId: string; sceneNumber: number; versionIdx: number } | null>(null)
+
+  // ─── Theme (dark default, persisted) ────────────────────────
+  const { theme, toggleTheme } = useTheme()
   const [diskUsage, setDiskUsage] = useState<DiskUsageInfo | null>(null)
   const [showDiskUsage, setShowDiskUsage] = useState(false)
   const [cleaningOutputs, setCleaningOutputs] = useState(false)
@@ -994,6 +998,8 @@ export default function App() {
         onDiskUsageClick={() => setShowDiskUsage(true)}
         onCleanupOutputs={handleCleanupOutputs}
         cleaningOutputs={cleaningOutputs}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <div className="flex flex-1 overflow-hidden">

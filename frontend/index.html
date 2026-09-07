@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ComfyUI Video Workflow</title>
+    <script>
+      // Apply saved theme before first paint to avoid a dark flash
+      try {
+        if (localStorage.getItem('app-theme') === 'light' ||
+            (!localStorage.getItem('app-theme') && matchMedia('(prefers-color-scheme: light)').matches)) {
+          document.documentElement.classList.add('light')
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body class="bg-zinc-950">
     <div id="root"></div>

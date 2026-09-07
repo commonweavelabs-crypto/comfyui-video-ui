@@ -166,7 +166,7 @@ export default function MusicPanel({ selectedTrackId, onSelectTrack }: MusicPane
                       style={{
                         borderTop: '5px solid transparent',
                         borderBottom: '5px solid transparent',
-                        borderLeft: '8px solid #818cf8',
+                        borderLeft: '8px solid var(--color-brand-400)',
                       }}
                     />
                   )}

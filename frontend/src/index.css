@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+/* ── Theme scopes ──────────────────────────────────────────────
+   Dark (default): Tailwind's stock zinc palette.
+   Light: the zinc scale is inverted on <html.light>, so every
+   bg-zinc-*/text-zinc-*/border-zinc-* utility in the app flips
+   automatically without touching component code. */
+:root {
+  --color-zinc-50:  #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+}
+
+html.light {
+  /* Inverted scale: 50↔950, 100↔900, 200↔800, 300↔700, 400↔500(ish) */
+  --color-zinc-50:  #09090b;
+  --color-zinc-100: #18181b;
+  --color-zinc-200: #27272a;
+  --color-zinc-300: #3f3f46;
+  --color-zinc-400: #52525b;
+  --color-zinc-500: #a1a1aa;
+  --color-zinc-600: #d4d4d8;
+  --color-zinc-700: #e4e4e7;
+  --color-zinc-800: #f4f4f5;
+  --color-zinc-900: #fafafa;
+  --color-zinc-950: #ffffff;
+}
+
 @theme {
   --color-brand-50: #f0f4ff;
   --color-brand-100: #dbe4ff;
@@ -11,8 +45,8 @@
 
 body {
   margin: 0;
-  background: #09090b;
-  color: #f4f4f5;
+  background: var(--color-zinc-950);
+  color: var(--color-zinc-100);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -30,13 +64,13 @@ body {
 /* Custom scrollbar for sidebar panels */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #3f3f46 transparent;
+  scrollbar-color: var(--color-zinc-700) transparent;
 }
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: var(--color-zinc-700);
   border-radius: 3px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
@@ -55,8 +89,8 @@ body {
     to right,
     #6366f1 0%,
     #6366f1 var(--scroll-progress),
-    #27272a var(--scroll-progress),
-    #27272a 100%
+    var(--color-zinc-800) var(--scroll-progress),
+    var(--color-zinc-800) 100%
   );
   cursor: pointer;
   outline: none;
@@ -66,7 +100,7 @@ body {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
-  border: 3px solid #18181b;
+  border: 3px solid var(--color-zinc-900);
   border-radius: 999px;
   background: #818cf8;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
@@ -75,7 +109,7 @@ body {
 .timeline-scroll-range::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  border: 3px solid #18181b;
+  border: 3px solid var(--color-zinc-900);
   border-radius: 999px;
   background: #818cf8;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
