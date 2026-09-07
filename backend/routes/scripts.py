@@ -122,6 +122,9 @@ async def get_render_settings(script_id: str):
         "grading": graded["grading"],
         "hardware": graded["hardware"],
         "model_max_mp": graded["model_max_mp"],
+        "fps_options": graded["fps_options"],
+        "fps_cap": graded["fps_cap"],
+        "fps_model_ceiling": graded["fps_model_ceiling"],
         "current": store.get_project_render_settings(script_id),
     }
 

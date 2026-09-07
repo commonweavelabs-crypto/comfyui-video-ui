@@ -14,9 +14,10 @@ interface ProjectSettingsModalProps {
   onSaved?: () => void
 }
 
-type Preset = { label: string; width: number | null; height: number | null; fps: number | null; note: string }
+type Preset = { label: string; width: number | null; height: number | null; note: string }
 type Grading = { verdict: string; reason: string }
 type Current = { preset: string; width: number; height: number; fps: number; source: string }
+type FpsOption = { fps: number; label: string; note: string }
 
 export default function ProjectSettingsModal({
   scriptId,
@@ -28,6 +29,9 @@ export default function ProjectSettingsModal({
   const [presets, setPresets] = useState<Record<string, Preset>>({})
   const [grading, setGrading] = useState<Record<string, Grading>>({})
   const [hardware, setHardware] = useState<{ gpu_name: string | null; vram_total_gb: number | null } | null>(null)
+  const [fpsOptions, setFpsOptions] = useState<FpsOption[]>([])
+  const [fpsCap, setFpsCap] = useState<number>(60)
+  const [fpsModelCeiling, setFpsModelCeiling] = useState<number>(50)
   const [current, setCurrent] = useState<Current | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [customW, setCustomW] = useState('')
@@ -44,6 +48,9 @@ export default function ProjectSettingsModal({
       setPresets(res.presets || {})
       setGrading(res.grading || {})
       setHardware(res.hardware || null)
+      setFpsOptions(res.fps_options || [])
+      setFpsCap(res.fps_cap ?? 60)
+      setFpsModelCeiling(res.fps_model_ceiling ?? 50)
       setCurrent(res.current || null)
       setSelected(res.current?.preset === 'custom' ? 'custom' : res.current?.preset || null)
       if (res.current?.preset === 'custom') {
@@ -65,6 +72,38 @@ export default function ProjectSettingsModal({
     (s) => s.status === 'complete' || s.status === 'queued' || s.status === 'rendering',
   )
   const aspectChanges = current && selected && current.preset !== selected
+
+  // FPS is independent of resolution (unbound): save fps only. Custom fps above
+  // the hardware cap warns but is allowed; above the model ceiling is rejected.
+  const chooseFps = useCallback(
+    (fps: number, isCustom = false) => {
+      if (isCustom && fps > fpsCap) {
+        if (!window.confirm(
+          `${fps}fps is above the recommended maximum (${fpsCap}fps) for ` +
+          `${hardware?.vram_total_gb?.toFixed(0) || 'this'}GB — expect very long renders. Use it anyway?`
+        )) {
+          return
+        }
+      }
+      void (async () => {
+        setSaving(true)
+        setError(null)
+        try {
+          const res = await renderSettingsApi.set(scriptId, { preset: current?.preset || 'custom', fps })
+          setCurrent(res.current)
+          setCustomFps('')
+          setSavedFlash(true)
+          setTimeout(() => setSavedFlash(false), 1500)
+          onSaved?.()
+        } catch (e) {
+          setError(e instanceof Error ? e.message : 'Failed to save frame rate')
+        } finally {
+          setSaving(false)
+        }
+      })()
+    },
+    [scriptId, current?.preset, fpsCap, hardware, onSaved],
+  )
 
   const apply = useCallback(
     async (preset: string) => {
@@ -145,7 +184,7 @@ export default function ProjectSettingsModal({
           {/* Preset grid */}
           <div>
             <div className="text-[10px] font-medium text-zinc-500 mb-2 tracking-[1px] uppercase">
-              Output format — applies to every scene
+              1. Frame size — applies to every scene
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {Object.entries(presets).map(([key, p]) => {
@@ -210,6 +249,84 @@ export default function ProjectSettingsModal({
                 className="w-16 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-200 text-center focus:outline-none focus:border-zinc-600" />
             </div>
           )}
+
+          {/* Frame rate — independent of resolution (unbound, Gui 2026-09-07) */}
+          <div>
+            <div className="text-[10px] font-medium text-zinc-500 mb-2 tracking-[1px] uppercase">
+              2. Frame rate — independent of size
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {fpsOptions.map((opt) => {
+                const active = current?.fps === opt.fps
+                const exceedsCap = opt.fps > fpsCap
+                return (
+                  <button
+                    key={opt.fps}
+                    onClick={() => chooseFps(opt.fps)}
+                    disabled={saving}
+                    title={exceedsCap
+                      ? `Above the recommended maximum (${fpsCap}fps) for ${hardware?.vram_total_gb?.toFixed(0) || 'this'}GB — expect very long renders`
+                      : opt.note}
+                    className={`text-left px-2.5 py-2 rounded-lg border transition-all ${
+                      exceedsCap
+                        ? 'border-zinc-800 bg-zinc-950 opacity-40 hover:opacity-60'
+                        : active
+                          ? 'border-emerald-600/60 bg-emerald-600/10'
+                          : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950'
+                    }`}
+                  >
+                    <div className={`text-[11px] font-medium flex items-center gap-1 ${
+                      exceedsCap ? 'text-zinc-600' : active ? 'text-emerald-400' : 'text-zinc-200'
+                    }`}>
+                      {opt.label}
+                      {exceedsCap && (
+                        <span className="text-[8px] px-1 py-px rounded bg-red-900/40 text-red-500 uppercase">Cap</span>
+                      )}
+                    </div>
+                    <div className="text-[9px] text-zinc-700 leading-tight mt-0.5 line-clamp-2">{opt.note}</div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Custom fps */}
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="number"
+                placeholder={`Custom (${fpsCap} max rec.)`}
+                value={customFps}
+                onChange={(e) => setCustomFps(e.target.value)}
+                className="w-36 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-xs text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-600"
+              />
+              <button
+                onClick={() => {
+                  const f = Number(customFps)
+                  if (!f || f < 1) {
+                    setError('Enter a valid frame rate')
+                    return
+                  }
+                  if (f > fpsModelCeiling) {
+                    setError(`This model's tested envelope tops out around ${fpsModelCeiling}fps — higher values are untested and may fail.`)
+                    return
+                  }
+                  chooseFps(f, true)
+                }}
+                disabled={saving || !customFps}
+                className="px-3 py-1 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-[10px] font-semibold rounded-md transition-all"
+              >
+                Apply custom
+              </button>
+            </div>
+
+            {current && (
+              <div className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
+                Rendering at <span className="text-zinc-400 font-mono">{current.width}x{current.height}</span> @{' '}
+                <span className="text-zinc-400 font-mono">{current.fps}fps</span>
+                {' '}(from {current.source === 'project' ? 'project preset' : 'template default'}). Frame rate is the
+                project&apos;s canvas setting: higher fps = proportionally longer renders (frame count = duration x fps).
+              </div>
+            )}
+          </div>
 
           {savedFlash && (
             <div className="text-xs text-emerald-400">Saved.</div>

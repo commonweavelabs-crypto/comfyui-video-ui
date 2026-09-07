@@ -99,15 +99,39 @@ PLATFORM_PRESETS: dict[str, dict] = {
     "custom":         {"label": "Custom",               "width": None, "height": None, "note": "Manual size"},
 }
 
-# Common frame rates — independent of resolution (Gui 2026-09-07). 24 = cinematic,
-# 30 = standard/phone footage, 60 = smooth/action. Higher fps = proportionally
-# longer render times (frame_count = duration * fps).
+# Common frame rates — independent of resolution (unbound, Gui 2026-09-07).
+# Official LTX-2.3 support: 24/25 and 48/50 fps tiers (help.ltx.io); open weights
+# README: "up to 50 FPS at native 4K". Frames must be 8n+1 (auto-padded).
 FPS_OPTIONS: list[dict] = [
     {"fps": 12, "label": "12 fps", "note": "Stylized / stop-motion feel — fastest renders"},
-    {"fps": 24, "label": "24 fps", "note": "Cinematic standard (film look)"},
+    {"fps": 24, "label": "24 fps", "note": "Cinematic standard (film look) — official LTX tier"},
     {"fps": 30, "label": "30 fps", "note": "Standard video / phone footage"},
     {"fps": 60, "label": "60 fps", "note": "Smooth motion — 2.5x the render work of 24"},
 ]
+
+# Hardware-based FPS caps (VRAM tier -> max recommended fps). Above the cap the
+# option is grayed with an explanation; a custom fps above the cap triggers a
+# warning but is allowed. Render cost scales linearly with fps.
+# Model ceiling: official tiers top out at 50fps — anything above 50 is beyond
+# the model's tested envelope regardless of hardware.
+_FPS_MODEL_CEILING = 50
+
+_FPS_VRAM_CAPS: list[tuple[float, int]] = [
+    (10.0, 24),   # <=10GB: 24fps
+    (14.0, 30),   # <=14GB: 30fps
+    (24.0, 60),   # <=24GB: 60fps
+    (999.0, 120), # 32GB+: up to 120 (well beyond model's tested 50 — warned)
+]
+
+
+def max_recommended_fps(vram_gb: float | None) -> int:
+    """Max recommended fps for this hardware, clamped to the model's envelope."""
+    if vram_gb is None:
+        vram_gb = 16.0
+    for threshold, cap in _FPS_VRAM_CAPS:
+        if vram_gb <= threshold:
+            return min(cap, _FPS_MODEL_CEILING)
+    return _FPS_MODEL_CEILING
 
 # Model resolution ceilings (official max/recommended resolution per model family).
 # Checked against the checkpoint name in the workflow; unknown models get a
@@ -221,6 +245,7 @@ def get_graded_presets(script_id: str | None = None) -> dict:
     if vram_gb is None:
         vram_gb = _probe_vram_sync()
     max_mp = _model_max_megapixels()
+    fps_cap = max_recommended_fps(vram_gb)
     grading = {}
     for key, p in PLATFORM_PRESETS.items():
         grading[key] = _grade_preset(p.get("width"), p.get("height"), vram_gb, max_mp)
@@ -230,6 +255,8 @@ def get_graded_presets(script_id: str | None = None) -> dict:
         "hardware": {"gpu_name": gpu_name, "vram_total_gb": vram_gb},
         "model_max_mp": round(max_mp, 2),
         "fps_options": FPS_OPTIONS,
+        "fps_cap": fps_cap,
+        "fps_model_ceiling": _FPS_MODEL_CEILING,
     }
 
 

@@ -326,6 +326,8 @@ export const renderSettingsApi = {
       hardware?: { gpu_name: string | null; vram_total_gb: number | null } | null
       model_max_mp?: number
       fps_options?: Array<{ fps: number; label: string; note: string }>
+      fps_cap?: number
+      fps_model_ceiling?: number
       current: { preset: string; width: number; height: number; fps: number; source: string }
     }>(`/scripts/${scriptId}/render-settings`),
 
