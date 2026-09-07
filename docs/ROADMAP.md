@@ -102,8 +102,20 @@ timer, broadcasts to clients). Roadmap:
 - **[backend] Replace pure polling with ComfyUI's native WebSocket events**
   (`/ws` socket) where possible; keep polling as fallback. Lower latency,
   less load, and matches the MCP's event/poll hybrid.
+  **DONE (2026-09-07):** `comfy_events.py` persistent client (auto-reconnect,
+  exp backoff); handlers route status/executing/execution_error to scenes via
+  prompt index (in-memory + catalog fallback). Poll loop backs off 15s when
+  events healthy, 3s fallback. `/api/comfyui/events/health` diagnostic.
 - **[backend] Event→UI push**: on queue events, push per-scene status deltas over
   our existing WS instead of full-state broadcasts.
+  **DONE (2026-09-07):** event handlers push targeted scene_update on transitions;
+  poll loop's rendering-tick broadcasts only fire when timing values changed
+  (delta check) — no more full-state spam.
+- **[frontend] Inline quick-edit on queued scenes** (frames, length, aspect):
+  **DONE (2026-09-07):** scene cards now have Resolution preset dropdown
+  (Template/16:9/9:16/1:1) + FPS input beside Duration. Stored per-scene
+  (width/height/fps), explicit null clears to template default; pipeline uses
+  scene value ?? template slot at submit. frame_count derives from scene fps.
 
 ## 5. MCP landscape (pick rationale) [verified]
 
