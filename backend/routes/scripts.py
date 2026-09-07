@@ -31,10 +31,11 @@ async def list_scripts():
     return {"scripts": store.list_scripts()}
 
 
-# Platform presets — needed at project CREATION time (before any script exists)
+# Platform presets — graded against this machine's hardware + model.
+# Needed at project CREATION time (before any script exists).
 @router.get("/render-presets")
 async def render_presets():
-    return {"presets": store.PLATFORM_PRESETS}
+    return store.get_graded_presets()
 
 
 @router.get("/search")

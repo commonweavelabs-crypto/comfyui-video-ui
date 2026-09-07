@@ -86,13 +86,152 @@ def get_script_content(script_id: str) -> str | None:
 # wrong. Presets are labeled by destination so users pick the right one for where
 # the video is going.
 PLATFORM_PRESETS: dict[str, dict] = {
+    "youtube_720p":   {"label": "YouTube 720p",         "width": 1280, "height": 720,  "fps": 24, "note": "Light horizontal — for 8-12GB cards"},
     "youtube_1080p":  {"label": "YouTube 1080p",        "width": 1920, "height": 1080, "fps": 24, "note": "Standard YouTube horizontal"},
+    "youtube_1440p":  {"label": "YouTube 1440p",        "width": 2560, "height": 1440, "fps": 24, "note": "QHD horizontal — 16GB+ cards"},
     "youtube_4k":     {"label": "YouTube 4K",           "width": 3840, "height": 2160, "fps": 24, "note": "High-res horizontal — very heavy render"},
     "reels_tiktok":   {"label": "Instagram Reels / TikTok", "width": 1080, "height": 1920, "fps": 30, "note": "Vertical short-form (9:16)"},
+    "reels_720p":     {"label": "Reels / TikTok 720p",  "width": 720,  "height": 1280, "fps": 30, "note": "Light vertical — for 8-12GB cards"},
     "instagram_feed": {"label": "Instagram Feed",       "width": 1080, "height": 1350, "fps": 30, "note": "IG portrait feed post (4:5)"},
     "square":         {"label": "Square 1:1",           "width": 1080, "height": 1080, "fps": 30, "note": "Feed-neutral, works everywhere"},
     "custom":         {"label": "Custom",               "width": None, "height": None, "fps": None, "note": "Manual size + FPS"},
 }
+
+# Model resolution ceilings (official max/recommended resolution per model family).
+# Checked against the checkpoint name in the workflow; unknown models get a
+# conservative default. Values are the max comfortable render resolution per
+# model family — exceeding them risks OOM or pathological render times.
+_MODEL_MAX_RESOLUTION: list[tuple[str, int]] = [
+    # (name fragment lowercase, max comfortable width*height/1000 i.e. megapixels)
+    ("ltx-2.3-22b-dev-fp8", 3.7),   # ~2560x1440 — 16GB fp8 tested ceiling (Gui)
+    ("ltx-2.3-22b-dev", 3.7),       # same weights, unquantized naming
+    ("ltx-2.3-13b", 2.1),           # smaller variant: ~1920x1080
+    ("ltx-2.3", 2.1),               # generic 2.3 fallback
+    ("ltx-2", 2.1),
+    ("ltx", 2.1),                   # any LTX default
+]
+_MODEL_DEFAULT_MAX_MP = 2.1  # conservative default for unknown models
+
+
+def _model_max_megapixels() -> float:
+    """Max comfortable render resolution (megapixels) for the model in the workflow."""
+    try:
+        import json as _json
+        from config import WORKFLOW_PATH
+        with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
+            workflow = _json.load(f)
+        # Find checkpoint-ish filenames in loader nodes
+        for node in workflow.values():
+            for v in (node.get("inputs") or {}).values():
+                if isinstance(v, str) and (".safetensors" in v or ".ckpt" in v or ".gguf" in v):
+                    low = v.lower()
+                    for fragment, mp in _MODEL_MAX_RESOLUTION:
+                        if fragment in low:
+                            return mp
+    except Exception:
+        pass
+    return _MODEL_DEFAULT_MAX_MP
+
+
+def _grade_preset(width: int | None, height: int | None,
+                  vram_gb: float | None, max_mp: float) -> dict:
+    """Grade one preset against hardware + model limits.
+
+    Returns {verdict: recommended|heavy|exceeds, reason}. 'heavy' = possible
+    but slow; 'exceeds' = likely OOM / pathological on this hardware.
+    """
+    if not width or not height:
+        return {"verdict": "recommended", "reason": ""}
+    mp = (width * height) / 1_000_000
+    reasons = []
+    # Model ceiling check (hardware-independent)
+    if mp > max_mp * 1.6:
+        return {"verdict": "exceeds",
+                "reason": f"Exceeds this model's supported resolution (~{max_mp:.1f}MP ceiling). Renders will likely fail."}
+    if mp > max_mp:
+        reasons.append(f"Above this model's recommended resolution (~{max_mp:.1f}MP)")
+    # Hardware tiers (VRAM-based)
+    if vram_gb is None:
+        hw_tier = 16.0  # assume mid-range when unknown
+    else:
+        hw_tier = vram_gb
+    if mp <= 1.0:            # <= ~1280x720
+        need = 8.0
+    elif mp <= 2.2:          # ~1080p class
+        need = 12.0
+    elif mp <= 3.9:          # ~1440p class
+        need = 16.0
+    else:                    # 4K class
+        need = 32.0
+    if vram_gb is not None and vram_gb < need * 0.75:
+        return {"verdict": "exceeds",
+                "reason": f"Needs ~{need:.0f}GB VRAM — {gpu_label(vram_gb)} will likely run out of memory."}
+    if vram_gb is not None and vram_gb < need:
+        reasons.append(f"Tight on {gpu_label(vram_gb)} — expect slow renders")
+    if mp > 2.2:
+        reasons.append("Long render times at this resolution")
+    if reasons:
+        return {"verdict": "heavy", "reason": "; ".join(reasons)}
+    return {"verdict": "recommended", "reason": ""}
+
+
+def gpu_label(vram_gb: float) -> str:
+    return f"{vram_gb:.0f}GB card"
+
+
+def get_graded_presets(script_id: str | None = None) -> dict:
+    """Platform presets graded against this machine's hardware + model.
+
+    Returns {presets: {...}, grading: {preset_key: {verdict, reason}},
+    hardware: {gpu_name, vram_total_gb}, model_max_mp}.
+    """
+    vram_gb, gpu_name = None, None
+    try:
+        # get_gpu_capabilities is async (httpx); run it on a scratch loop since
+        # store.py is called from both sync and async contexts.
+        import asyncio
+        from pipeline import get_gpu_capabilities
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        caps = None
+        if loop is not None:
+            # Inside a running loop — schedule and don't block; fall back to sync probe
+            vram_gb = _probe_vram_sync()
+        else:
+            caps = asyncio.run(get_gpu_capabilities())
+        if caps:
+            vram_gb = caps.get("vram_total_gb")
+            gpu_name = caps.get("gpu_name")
+    except Exception:
+        pass
+    if vram_gb is None:
+        vram_gb = _probe_vram_sync()
+    max_mp = _model_max_megapixels()
+    grading = {}
+    for key, p in PLATFORM_PRESETS.items():
+        grading[key] = _grade_preset(p.get("width"), p.get("height"), vram_gb, max_mp)
+    return {
+        "presets": PLATFORM_PRESETS,
+        "grading": grading,
+        "hardware": {"gpu_name": gpu_name, "vram_total_gb": vram_gb},
+        "model_max_mp": round(max_mp, 2),
+    }
+
+
+def _probe_vram_sync() -> float | None:
+    """Sync VRAM probe via nvidia-smi (no event loop needed)."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=10,
+        )
+        mib = float(result.stdout.strip().split("\n")[0])
+        return round(mib / 1024, 1)
+    except Exception:
+        return None
 
 
 def get_project_render_settings(script_id: str) -> dict:
@@ -127,7 +266,11 @@ def get_project_render_settings(script_id: str) -> dict:
 
 
 def _load_workflow_public() -> dict:
-    return _load_workflow()
+    """Load the LTX workflow JSON (store.py has no pipeline dependency)."""
+    import json as _json
+    from config import WORKFLOW_PATH
+    with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
+        return _json.load(f)
 
 
 def set_project_render_settings(script_id: str, preset: str,

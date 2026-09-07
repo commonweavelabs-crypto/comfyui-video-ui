@@ -52,12 +52,17 @@ export default function WorkflowWizard({
 
   // ─── Step 0: Script creation ──────────────────────────────
   // Load platform presets when the wizard mounts in creation mode (no script yet)
+  const [grading, setGrading] = useState<Record<string, { verdict: string; reason: string }>>({})
+  const [hardware, setHardware] = useState<{ gpu_name: string | null; vram_total_gb: number | null } | null>(null)
+  const [pendingExceeds, setPendingExceeds] = useState<string | null>(null)
   useEffect(() => {
     if (script) return
     fetch('/api/scripts/render-presets')
       .then((r) => r.json())
       .then((res) => {
         if (res?.presets) setPresets(res.presets)
+        if (res?.grading) setGrading(res.grading)
+        if (res?.hardware) setHardware(res.hardware)
       })
       .catch(() => {
         /* non-fatal: picker shows empty if the endpoint fails */
@@ -317,20 +322,42 @@ export default function WorkflowWizard({
                     <div className="grid grid-cols-3 gap-1.5">
                       {Object.entries(presets).map(([key, p]) => {
                         const active = selectedPreset === key
+                        const g = grading[key]
+                        const verdict = g?.verdict || 'recommended'
+                        const isExceeds = verdict === 'exceeds'
+                        const isHeavy = verdict === 'heavy'
                         return (
                           <button
                             key={key}
                             type="button"
-                            onClick={() => setSelectedPreset(key)}
-                            title={presets[key]?.note}
+                            onClick={() => {
+                              if (isExceeds) {
+                                setPendingExceeds(key)
+                              } else {
+                                setSelectedPreset(key)
+                              }
+                            }}
+                            title={g?.reason || presets[key]?.note}
                             className={`text-left px-2.5 py-2 rounded-lg border transition-all ${
-                              active
-                                ? 'border-emerald-600/60 bg-emerald-600/10'
-                                : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950'
+                              isExceeds
+                                ? 'border-zinc-800 bg-zinc-950 opacity-40 cursor-not-allowed hover:opacity-60'
+                                : active
+                                  ? 'border-emerald-600/60 bg-emerald-600/10'
+                                  : isHeavy
+                                    ? 'border-yellow-700/40 hover:border-yellow-700 bg-zinc-950'
+                                    : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950'
                             }`}
                           >
-                            <div className={`text-[11px] font-medium ${active ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                            <div className={`text-[11px] font-medium flex items-center gap-1.5 ${
+                              isExceeds ? 'text-zinc-600' : active ? 'text-emerald-400' : isHeavy ? 'text-yellow-500' : 'text-zinc-200'
+                            }`}>
                               {presets[key].label}
+                              {isHeavy && (
+                                <span className="text-[8px] px-1 py-px rounded bg-yellow-900/40 text-yellow-500 tracking-[0.5px] uppercase">Slow</span>
+                              )}
+                              {isExceeds && (
+                                <span className="text-[8px] px-1 py-px rounded bg-red-900/40 text-red-500 tracking-[0.5px] uppercase">Not rec.</span>
+                              )}
                             </div>
                             <div className="text-[9px] text-zinc-600 mt-0.5">
                               {presets[key].width && presets[key].height
@@ -341,6 +368,11 @@ export default function WorkflowWizard({
                         )
                       })}
                     </div>
+                    {hardware?.vram_total_gb && (
+                      <div className="text-[10px] text-zinc-600 mt-1.5">
+                        Graded for {hardware.gpu_name || 'your GPU'} ({hardware.vram_total_gb.toFixed(0)}GB) — grayed presets exceed this hardware or the model's supported resolution.
+                      </div>
+                    )}
                     {!selectedPreset && (
                       <div className="text-[10px] text-zinc-600 mt-1.5">
                         Pick where this video will be posted — it decides the frame size and frame rate for the whole project.
@@ -661,6 +693,39 @@ export default function WorkflowWizard({
           </div>
         </div>
       </div>
+
+      {/* Exceeds-hardware confirmation dialog (step 0 preset picker) */}
+      {pendingExceeds && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm mx-4">
+            <div className="text-sm font-semibold text-yellow-500 mb-2">
+              {presets[pendingExceeds]?.label} is not recommended for your hardware
+            </div>
+            <div className="text-xs text-zinc-500 mb-4 leading-relaxed">
+              {grading[pendingExceeds]?.reason} Renders may fail or take extremely long.
+              {hardware?.vram_total_gb ? ` Recommended maximum for ${hardware.vram_total_gb.toFixed(0)}GB is around 1440p with this model.` : ''}
+              {' '}Use this resolution anyway?
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPendingExceeds(null)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-xl transition-all"
+              >
+                Pick a lower resolution
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedPreset(pendingExceeds)
+                  setPendingExceeds(null)
+                }}
+                className="flex-1 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium rounded-xl transition-all"
+              >
+                Use anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Close confirmation dialog */}
       {showCloseConfirm && (
