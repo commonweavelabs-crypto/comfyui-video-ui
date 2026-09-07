@@ -17,7 +17,7 @@
       "broll_id": "",
       "broll_volume": 0.0,
       "created": "2026-09-01T23:11:05.724191+00:00",
-      "updated": "2026-09-02T01:25:03.433436+00:00",
+      "updated": "2026-09-07T20:22:49.344461+00:00",
       "scene_number": 1,
       "error": "All connection attempts failed",
       "video_files": [
@@ -49,7 +49,10 @@
         }
       ],
       "video_filename": "scene_11_1788311523_20260822-e5fbe81f_scene_11_00001_.mp4",
-      "active_render_id": "9532f19e1b3a"
+      "active_render_id": "9532f19e1b3a",
+      "width": null,
+      "height": null,
+      "fps": null
     },
     {
       "scene_id": "8",

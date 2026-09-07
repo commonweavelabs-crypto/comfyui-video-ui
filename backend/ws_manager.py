@@ -226,15 +226,22 @@ class ConnectionManager:
                                     "scene": _enrich_scene(sid, updated),
                                 })
                             elif scene.get("status") == "rendering":
-                                # Still rendering — update timing data
+                                # Still rendering — push timing DELTA only when
+                                # values actually changed (roadmap #3: event->UI
+                                # push deltas instead of full-state spam).
                                 from routes.scenes import _enrich_scene
                                 timing = await compute_scene_timing(scene)
-                                scene.update(timing)
-                                await self.broadcast({
-                                    "type": "scene_update",
-                                    "script_id": sid,
-                                    "scene": _enrich_scene(sid, scene),
-                                })
+                                changed = {
+                                    k: v for k, v in timing.items()
+                                    if scene.get(k) != v
+                                }
+                                if changed:
+                                    scene.update(timing)
+                                    await self.broadcast({
+                                        "type": "scene_update",
+                                        "script_id": sid,
+                                        "scene": _enrich_scene(sid, scene),
+                                    })
             except Exception:
                 pass
 
