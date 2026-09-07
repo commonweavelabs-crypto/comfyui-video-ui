@@ -59,6 +59,11 @@ The official server's 40 tools validate a pattern our backend should adopt:
 - **[backend] Slot-level workflow editing** (`list_workflow_slots`, `set_workflow_slot`,
   `validate_workflow`, `vary_workflow`): templates are parameterized by slot address
   (`6.text`) or name. Our WorkflowWizard can expose named slots instead of raw JSON.
+  **DONE (2026-09-06):** `GET /api/comfyui/slots` introspects Primitive/Switch nodes
+  (named slots w/ labels, types, min/max, per-scene flag); `POST /api/comfyui/slots/set`
+  validates + persists to the workflow JSON. Frontend `SlotsPanel` in the wizard Render
+  step: toggles for bools, number inputs for ints, locked "per scene" rows for
+  prompt/duration. Verified live + headless screenshot.
 - **[backend] Remote targeting**: `COMFYUI_URL`/`COMFY_LOCAL_URL` env points all tools
   at any host:port. Directly matches our "connect any backend" goal — the UI's
   connect dialog should write this one value; local vs LAN backend becomes a
