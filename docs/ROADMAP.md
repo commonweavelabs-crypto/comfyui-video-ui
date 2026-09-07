@@ -146,6 +146,13 @@ timer, broadcasts to clients). Roadmap:
 7. **End-to-end verified:** presets persist (reels 1080x1920@30 survived
    GET-after-PUT), grading matches Gui's 16GB/5070 Ti reality, all modals clean
    (zero JS errors). Commits: creation picker, grading, settings modal, library.
+8. **FPS UNBOUND FROM RESOLUTION (Gui, 2026-09-07):** frame size (destination
+   choice) and frame rate (look/time choice) are independent decisions. Presets
+   carry size only; FPS is its own selector row (12/24/30/60 with notes — 12
+   stylized/fastest, 24 cinematic, 30 standard, 60 smooth/2.5x render work).
+   FPS layering on save: explicit arg > existing project fps > 24 default.
+   Switching presets preserves the chosen fps (verified: reels switch kept 60).
+   Label wording: "Frame size" and "Frame rate" sections replace "Output format".
 
 ## 5. MCP landscape (pick rationale) [verified]
 
