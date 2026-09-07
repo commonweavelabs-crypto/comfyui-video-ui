@@ -116,6 +116,27 @@ timer, broadcasts to clients). Roadmap:
   (Template/16:9/9:16/1:1) + FPS input beside Duration. Stored per-scene
   (width/height/fps), explicit null clears to template default; pipeline uses
   scene value ?? template slot at submit. frame_count derives from scene fps.
+  **REDESIGNED same day (Gui):** per-scene resolution/FPS was wrong (mixed
+  aspect ratios/frame rates within one video are broken by design) — replaced
+  by PROJECT-level render settings (see the project-level entry above). Scene
+  cards back to Duration-only.
+
+## Output Format feature set (2026-09-07 — all 5 steps BUILT)
+
+1. **Creation-time picker** — wizard step 0: preset grid required before Create
+   (no default); format saved to project on creation.
+2. **Hardware-aware grading** — `_grade_preset` (VRAM tiers + model MP ceiling
+   from checkpoint name) → recommended/heavy/exceeds; grayed presets w/ badges,
+   exceeds-confirmation dialog; 720p tiers for 8-12GB cards.
+3. **Header Settings button + ProjectSettingsModal** — preset grid + change
+   warnings: "N of M scenes already rendered or queued — will need re-submission"
+   + "Initial frames were generated for the current aspect ratio — they will be
+   cropped or padded to fit WxH".
+4. **Library sidebar Settings button** per project row — opens the same modal
+   without opening the project.
+5. **End-to-end verified:** presets persist (reels 1080x1920@30 survived
+   GET-after-PUT), grading matches Gui's 16GB/5070 Ti reality, all modals clean
+   (zero JS errors). Commits: creation picker, grading, settings modal, library.
 
 ## 5. MCP landscape (pick rationale) [verified]
 
