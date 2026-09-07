@@ -3,6 +3,7 @@ import type { Scene, Script, ComfyUIStatus, PipelineProgress, FrameCatalogItem, 
 import { scriptsApi, scenesApi, comfyuiApi, framesApi, musicApi, brollApi, diskApi } from './api'
 import type { DiskUsageInfo } from './api'
 import Header from './components/Header'
+import ProjectSettingsModal from './components/ProjectSettingsModal'
 import ScriptLibrary from './components/ScriptLibrary'
 import Timeline from './components/Timeline'
 import FrameCatalog from './components/FrameCatalog'
@@ -84,6 +85,7 @@ export default function App() {
   const { theme, toggleTheme } = useTheme()
   const [diskUsage, setDiskUsage] = useState<DiskUsageInfo | null>(null)
   const [showDiskUsage, setShowDiskUsage] = useState(false)
+  const [showProjectSettings, setShowProjectSettings] = useState(false)
   const [cleaningOutputs, setCleaningOutputs] = useState(false)
 
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -992,6 +994,8 @@ export default function App() {
         comfyuiStatus={comfyuiStatus}
         sceneCount={scenes.length}
         activeScriptTitle={activeScript?.title ?? null}
+        activeScriptId={activeScript?.id ?? null}
+        onOpenProjectSettings={() => setShowProjectSettings(true)}
         onStartWizard={handleStartWizard}
         queueTimeEstimate={queueTimeEstimate > 0 ? queueTimeEstimate : null}
         diskSizeFormatted={diskUsage?.total_size_formatted ?? null}
@@ -1355,6 +1359,26 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Project settings modal (output format — resolution + FPS) */}
+      {showProjectSettings && activeScript && (
+        <ProjectSettingsModal
+          scriptId={activeScript.id}
+          projectTitle={activeScript.title}
+          scenes={scenes}
+          onClose={() => setShowProjectSettings(false)}
+          onSaved={async () => {
+            // Re-poll so any format-dependent UI stays fresh
+            if (!activeScript) return
+            try {
+              const sceneList = await scenesApi.list(activeScript.id)
+              setScenes(sceneList)
+            } catch (e) {
+              console.error('Failed to refresh scenes:', e)
+            }
+          }}
+        />
       )}
 
       {/* Disk usage detail modal */}

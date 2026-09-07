@@ -116,8 +116,12 @@ async def get_render_settings(script_id: str):
     """Effective render geometry for the project (project preset > template)."""
     if not store.get_script(script_id):
         raise HTTPException(404, "Script not found")
+    graded = store.get_graded_presets(script_id)
     return {
-        "presets": store.PLATFORM_PRESETS,
+        "presets": graded["presets"],
+        "grading": graded["grading"],
+        "hardware": graded["hardware"],
+        "model_max_mp": graded["model_max_mp"],
         "current": store.get_project_render_settings(script_id),
     }
 

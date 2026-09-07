@@ -322,6 +322,9 @@ export const renderSettingsApi = {
         fps: number | null
         note: string
       }>
+      grading?: Record<string, { verdict: string; reason: string }>
+      hardware?: { gpu_name: string | null; vram_total_gb: number | null } | null
+      model_max_mp?: number
       current: { preset: string; width: number; height: number; fps: number; source: string }
     }>(`/scripts/${scriptId}/render-settings`),
 
