@@ -68,6 +68,20 @@ export interface ComfyUIStatus {
   queue_status: string
 }
 
+export interface WorkflowSlot {
+  node_id: string
+  class_type: string
+  type: 'int' | 'float' | 'bool' | 'string' | 'unknown'
+  value: number | boolean | string | null
+  name: string
+  label: string
+  description: string
+  editable: boolean
+  min?: number
+  max?: number
+  overridden_by?: string
+}
+
 export interface PipelineProgress {
   stage: string
   message: string

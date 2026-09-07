@@ -3,6 +3,7 @@ import type { Scene, Script, PipelineProgress } from '../types'
 import { scriptsApi, scenesApi, comfyuiApi, musicApi } from '../api'
 import MusicPanel from './MusicPanel'
 import ExportPanel from './ExportPanel'
+import SlotsPanel from './SlotsPanel'
 
 interface WorkflowWizardProps {
   script: Script | null
@@ -463,6 +464,7 @@ export default function WorkflowWizard({
           {/* Step 4: Render */}
           {step === 4 && (
             <div className="space-y-3">
+              <SlotsPanel />
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm text-zinc-400">
                   Submit scenes to ComfyUI for rendering.

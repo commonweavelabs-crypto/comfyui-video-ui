@@ -16,6 +16,7 @@ import type {
   AssemblyProgress,
   ExportVideo,
   RenderVersion,
+  WorkflowSlot,
 } from './types'
 
 const BASE = '/api'
@@ -289,6 +290,23 @@ export const comfyuiApi = {
   logs: (bytes: number = 20000) =>
     request<{ logs: string; truncated: boolean; error?: string }>(
       `/comfyui/logs?bytes=${bytes}`,
+    ),
+
+  // Workflow slot introspection — named parameter fields (roadmap #1)
+  slots: () =>
+    request<{
+      slots: WorkflowSlot[]
+      node_count: number
+      error?: string
+    }>('/comfyui/slots'),
+
+  setSlot: (nodeId: string, value: number | boolean | string) =>
+    request<{ success: boolean; node_id: string; value: number | boolean | string; name: string }>(
+      `/comfyui/slots/set`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ node_id: nodeId, value }),
+      },
     ),
 }
 

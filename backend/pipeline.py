@@ -1026,3 +1026,146 @@ async def download_comfyui_output(file_info: dict, script_id: str, scene_id: str
         "video_filename": safe_name,
         "video_path": str(dest_path),
     }
+
+
+# ── Workflow slot introspection (roadmap #1: slot-based template editing) ──
+# Templates are parameterized by slot address ("340:331.inputs.value"). Expose
+# named slots instead of raw JSON editing, mirroring comfy-mcp's
+# list_workflow_slots / set_workflow_slot pattern.
+
+# Known slot metadata for the LTX workflow: human name, description, unit,
+# min/max, and whether the value is overridden per-scene at submit time.
+_SLOT_META: dict[str, dict[str, Any]] = {
+    "340:319": {
+        "name": "prompt_text",
+        "label": "Prompt Text",
+        "description": "Scene prompt sent to the video model (overridden per scene at submit)",
+        "overridden_by": "scene.prompt",
+    },
+    "340:331": {
+        "name": "duration_seconds",
+        "label": "Duration (s)",
+        "description": "Video length in seconds (overridden per scene at submit)",
+        "overridden_by": "scene.duration",
+    },
+    "340:323": {
+        "name": "fps",
+        "label": "FPS",
+        "description": "Frames per second of the output video",
+        "min": 8, "max": 60,
+    },
+    "340:330": {
+        "name": "width",
+        "label": "Width",
+        "description": "Output video width in pixels",
+        "min": 256, "max": 1920,
+    },
+    "340:324": {
+        "name": "height",
+        "label": "Height",
+        "description": "Output video height in pixels",
+        "min": 256, "max": 1920,
+    },
+    "340:349": {
+        "name": "prompt_enhancer",
+        "label": "Prompt Enhancer",
+        "description": "Use LTX's built-in prompt enhancer instead of the raw prompt",
+    },
+    "340:305": {
+        "name": "i2v_bypass",
+        "label": "Skip Initial Frame",
+        "description": "True = text-to-video (ignore initial frame); False = image-to-video (use frame)",
+    },
+}
+
+_PRIMITIVE_CLASS_TO_TYPE = {
+    "PrimitiveInt": "int",
+    "PrimitiveFloat": "float",
+    "PrimitiveBoolean": "bool",
+    "PrimitiveString": "string",
+    "PrimitiveStringMultiline": "string",
+}
+
+
+def list_workflow_slots() -> dict:
+    """Scan the workflow for parameterizable Primitive/Switch nodes.
+
+    Returns {slots: [{node_id, class_type, type, value, name, label,
+    description, ...}], node_count}. Unknown primitives are included with
+    generic metadata so newly added workflow params surface automatically.
+    """
+    workflow = _load_workflow()
+    slots = []
+    for node_id, node in workflow.items():
+        class_type = node.get("class_type", "")
+        if not class_type.startswith(("Primitive", "ComfySwitchNode")):
+            continue
+        inputs = node.get("inputs", {})
+        value = inputs.get("value")
+        if value is None and class_type == "ComfySwitchNode":
+            continue  # switch topology node, not a user-facing value
+        meta = _SLOT_META.get(node_id, {})
+        vtype = _PRIMITIVE_CLASS_TO_TYPE.get(class_type, "unknown")
+        slot = {
+            "node_id": node_id,
+            "class_type": class_type,
+            "type": vtype,
+            "value": value,
+            "name": meta.get("name", f"node_{node_id}"),
+            "label": meta.get("label", f"Node {node_id} ({class_type})"),
+            "description": meta.get("description", "Workflow parameter"),
+            "editable": node_id not in ("340:319", "340:331"),  # per-scene overrides
+        }
+        for k in ("min", "max", "overridden_by"):
+            if k in meta:
+                slot[k] = meta[k]
+        slots.append(slot)
+    slots.sort(key=lambda s: s["node_id"])
+    return {"slots": slots, "node_count": len(workflow)}
+
+
+def set_workflow_slot(node_id: str, value: Any) -> dict:
+    """Set one slot value and persist it back to the workflow JSON.
+
+    Validates the value against the slot's declared type. Per-scene slots
+    (prompt, duration) are rejected — they belong to scene data, not the
+    template. Returns {success, node_id, value} or {success: False, error}.
+    """
+    workflow = _load_workflow()
+    node = workflow.get(node_id)
+    if node is None:
+        return {"success": False, "error": f"Unknown node: {node_id}"}
+    meta = _SLOT_META.get(node_id, {})
+    if meta.get("overridden_by"):
+        return {"success": False,
+                "error": f"'{meta.get('name', node_id)}' is set per scene ({meta['overridden_by']}), not on the template"}
+
+    # Coerce/validate by declared type
+    try:
+        class_type = node.get("class_type", "")
+        if class_type == "PrimitiveInt":
+            value = int(value)
+        elif class_type == "PrimitiveFloat":
+            value = float(value)
+        elif class_type == "PrimitiveBoolean":
+            if isinstance(value, str):
+                value = value.strip().lower() in ("true", "1", "yes")
+            else:
+                value = bool(value)
+        elif class_type in ("PrimitiveString", "PrimitiveStringMultiline"):
+            value = str(value)
+    except (TypeError, ValueError):
+        return {"success": False, "error": f"Value {value!r} is not valid for {node.get('class_type')}"}
+
+    # Range validation when declared
+    if "min" in meta and value < meta["min"]:
+        return {"success": False, "error": f"{meta.get('name', node_id)} minimum is {meta['min']}"}
+    if "max" in meta and value > meta["max"]:
+        return {"success": False, "error": f"{meta.get('name', node_id)} maximum is {meta['max']}"}
+
+    node.setdefault("inputs", {})["value"] = value
+    with open(WORKFLOW_PATH, "w", encoding="utf-8") as f:
+        json.dump(workflow, f, indent=2, ensure_ascii=False)
+
+    return {"success": True, "node_id": node_id, "value": value,
+            "name": meta.get("name", f"node_{node_id}")}

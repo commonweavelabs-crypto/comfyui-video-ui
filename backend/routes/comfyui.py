@@ -21,6 +21,8 @@ from pipeline import (
    get_gpu_capabilities,
    get_render_timing,
    get_workflow_assets_status,
+   list_workflow_slots,
+   set_workflow_slot,
    submit_scene_to_comfyui,
 )
 from ws_manager import manager
@@ -164,6 +166,28 @@ async def workflow_assets():
     """Check every model asset the video workflow loads against the live
     ComfyUI + shared model dirs. Frontend dims submit / warns before run."""
     return await get_workflow_assets_status()
+
+
+# ── Workflow slot editing (roadmap #1) ───────────────────────────────────────
+
+@router.get("/slots")
+async def workflow_slots():
+    """List parameterizable workflow slots (named fields instead of raw JSON)."""
+    return list_workflow_slots()
+
+
+class SetSlotBody(BaseModel):
+    node_id: str
+    value: object  # int | float | bool | str — validated by pipeline
+
+
+@router.post("/slots/set")
+async def workflow_set_slot(body: SetSlotBody):
+    """Set one workflow slot value (persists to the workflow JSON)."""
+    result = set_workflow_slot(body.node_id, body.value)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Slot set failed"))
+    return result
 
 
 # ── ComfyUI output cleanup (file hygiene) ────────────────────────────────────
