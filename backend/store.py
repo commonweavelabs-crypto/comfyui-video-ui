@@ -322,7 +322,36 @@ def set_project_render_settings(script_id: str, preset: str,
     FPS is INDEPENDENT of resolution (unbound, Gui 2026-09-07): the explicit
     fps argument wins; otherwise the existing project fps is kept; otherwise
     the 24fps default.
+
+    'template' is accepted as a preset meaning "follow the workflow's template
+    slots" (legacy projects report this) — it resolves size from the template
+    and only updates fps when explicitly given.
     """
+    if preset == "template":
+        # Resolve size from template slots, keep/apply fps independently
+        try:
+            workflow = _load_workflow_public()
+            tw = int(workflow["340:330"]["inputs"].get("value", 1600))
+            th = int(workflow["340:324"]["inputs"].get("value", 900))
+        except Exception:
+            tw, th = 1600, 900
+        existing = get_script(script_id) or {}
+        existing_fps = (existing.get("render_settings") or {}).get("fps")
+        resolved_fps = fps or existing_fps or 24
+        catalog = load_catalog()
+        for s in catalog.get("scripts", []):
+            if s.get("script_id") == script_id:
+                s["render_settings"] = {
+                    "preset": "template",
+                    "width": tw,
+                    "height": th,
+                    "fps": int(resolved_fps),
+                }
+                s["updated"] = _now()
+                save_catalog(catalog)
+                return s
+        return None
+
     preset_info = PLATFORM_PRESETS.get(preset)
     if preset_info is None:
         return None

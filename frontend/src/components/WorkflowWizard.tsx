@@ -4,6 +4,7 @@ import { scriptsApi, scenesApi, comfyuiApi, musicApi, renderSettingsApi } from '
 import MusicPanel from './MusicPanel'
 import ExportPanel from './ExportPanel'
 import SlotsPanel from './SlotsPanel'
+import OutputFormatPicker, { type OutputFormatSelection } from './OutputFormatPicker'
 
 interface WorkflowWizardProps {
   script: Script | null
@@ -46,45 +47,32 @@ export default function WorkflowWizard({
   const [selectedMusicTrack, setSelectedMusicTrack] = useState<string | null>(null)
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   // Creation-time output format (Gui 2026-09-07: format is a start-of-project
-  // decision — no default, must be picked before Create is enabled)
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
-  const [presets, setPresets] = useState<Record<string, { label: string; width: number | null; height: number | null; fps: number | null; note: string }>>({})
-
-  // ─── Step 0: Script creation ──────────────────────────────
-  // Load platform presets when the wizard mounts in creation mode (no script yet)
-  const [grading, setGrading] = useState<Record<string, { verdict: string; reason: string }>>({})
-  const [hardware, setHardware] = useState<{ gpu_name: string | null; vram_total_gb: number | null } | null>(null)
-  const [pendingExceeds, setPendingExceeds] = useState<string | null>(null)
-  useEffect(() => {
-    if (script) return
-    fetch('/api/scripts/render-presets')
-      .then((r) => r.json())
-      .then((res) => {
-        if (res?.presets) setPresets(res.presets)
-        if (res?.grading) setGrading(res.grading)
-        if (res?.hardware) setHardware(res.hardware)
-      })
-      .catch(() => {
-        /* non-fatal: picker shows empty if the endpoint fails */
-      })
-  }, [script])
+  // decision — no default, must be picked before Create is enabled).
+  // Selection UI lives in the shared OutputFormatPicker; persisted after create.
+  const [formatSelection, setFormatSelection] = useState<OutputFormatSelection | null>(null)
 
   const handleCreateScript = async () => {
-    if (!newTitle.trim() || !newContent.trim() || !selectedPreset) return
+    if (!newTitle.trim() || !newContent.trim() || !formatSelection?.preset) return
     setCreating(true)
     setCreateError(null)
     try {
       const created = await scriptsApi.create(newTitle.trim(), newContent.trim())
       // Persist the chosen output format on the new project immediately
       try {
-        await renderSettingsApi.set(created.id, { preset: selectedPreset })
+        const body: { preset: string; fps?: number; width?: number; height?: number } = {
+          preset: formatSelection.preset,
+        }
+        if (formatSelection.fps) body.fps = formatSelection.fps
+        if (formatSelection.width) body.width = formatSelection.width
+        if (formatSelection.height) body.height = formatSelection.height
+        await renderSettingsApi.set(created.id, body)
       } catch (presetErr) {
         console.error('Failed to save render preset:', presetErr)
       }
       onScriptCreated(created)
       setNewTitle('')
       setNewContent('')
-      setSelectedPreset(null)
+      setFormatSelection(null)
     } catch (e) {
       setCreateError(e instanceof Error ? e.message : 'Failed to create script')
     } finally {
@@ -315,70 +303,11 @@ export default function WorkflowWizard({
               ) : (
                 <div className="space-y-3">
                   {/* Output format — required first decision (Gui 2026-09-07) */}
-                  <div>
-                    <label className="text-[10px] font-medium text-zinc-500 mb-1.5 tracking-[1px] uppercase block">
-                      1. Output format — where is this going?
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {Object.entries(presets).map(([key, p]) => {
-                        const active = selectedPreset === key
-                        const g = grading[key]
-                        const verdict = g?.verdict || 'recommended'
-                        const isExceeds = verdict === 'exceeds'
-                        const isHeavy = verdict === 'heavy'
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => {
-                              if (isExceeds) {
-                                setPendingExceeds(key)
-                              } else {
-                                setSelectedPreset(key)
-                              }
-                            }}
-                            title={g?.reason || presets[key]?.note}
-                            className={`text-left px-2.5 py-2 rounded-lg border transition-all ${
-                              isExceeds
-                                ? 'border-zinc-800 bg-zinc-950 opacity-40 cursor-not-allowed hover:opacity-60'
-                                : active
-                                  ? 'border-emerald-600/60 bg-emerald-600/10'
-                                  : isHeavy
-                                    ? 'border-yellow-700/40 hover:border-yellow-700 bg-zinc-950'
-                                    : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950'
-                            }`}
-                          >
-                            <div className={`text-[11px] font-medium flex items-center gap-1.5 ${
-                              isExceeds ? 'text-zinc-600' : active ? 'text-emerald-400' : isHeavy ? 'text-yellow-500' : 'text-zinc-200'
-                            }`}>
-                              {presets[key].label}
-                              {isHeavy && (
-                                <span className="text-[8px] px-1 py-px rounded bg-yellow-900/40 text-yellow-500 tracking-[0.5px] uppercase">Slow</span>
-                              )}
-                              {isExceeds && (
-                                <span className="text-[8px] px-1 py-px rounded bg-red-900/40 text-red-500 tracking-[0.5px] uppercase">Not rec.</span>
-                              )}
-                            </div>
-                            <div className="text-[9px] text-zinc-600 mt-0.5">
-                              {presets[key].width && presets[key].height
-                                ? `${presets[key].width}x${presets[key].height}`
-                                : 'Set size after creation'}
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                    {hardware?.vram_total_gb && (
-                      <div className="text-[10px] text-zinc-600 mt-1.5">
-                        Graded for {hardware.gpu_name || 'your GPU'} ({hardware.vram_total_gb.toFixed(0)}GB) — grayed presets exceed this hardware or the model's supported resolution.
-                      </div>
-                    )}
-                    {!selectedPreset && (
-                      <div className="text-[10px] text-zinc-600 mt-1.5">
-                        Pick where this video will be posted — it decides the frame size and frame rate for the whole project.
-                      </div>
-                    )}
-                  </div>
+                  <OutputFormatPicker
+                    selection={formatSelection}
+                    onChange={(sel) => setFormatSelection(sel)}
+                    compact
+                  />
                   <div>
                     <label className="text-[10px] font-medium text-zinc-500 mb-1.5 tracking-[1px] uppercase block">
                       2. Title
@@ -409,7 +338,7 @@ export default function WorkflowWizard({
                   )}
                   <button
                     onClick={handleCreateScript}
-                    disabled={!newTitle.trim() || !newContent.trim() || !selectedPreset || creating}
+                    disabled={!newTitle.trim() || !newContent.trim() || !formatSelection?.preset || creating}
                     className="px-6 py-3 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all tracking-[0.3px]"
                   >
                     {creating ? 'Creating...' : 'Create & Continue'}
@@ -693,39 +622,6 @@ export default function WorkflowWizard({
           </div>
         </div>
       </div>
-
-      {/* Exceeds-hardware confirmation dialog (step 0 preset picker) */}
-      {pendingExceeds && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm mx-4">
-            <div className="text-sm font-semibold text-yellow-500 mb-2">
-              {presets[pendingExceeds]?.label} is not recommended for your hardware
-            </div>
-            <div className="text-xs text-zinc-500 mb-4 leading-relaxed">
-              {grading[pendingExceeds]?.reason} Renders may fail or take extremely long.
-              {hardware?.vram_total_gb ? ` Recommended maximum for ${hardware.vram_total_gb.toFixed(0)}GB is around 1440p with this model.` : ''}
-              {' '}Use this resolution anyway?
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPendingExceeds(null)}
-                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-xl transition-all"
-              >
-                Pick a lower resolution
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedPreset(pendingExceeds)
-                  setPendingExceeds(null)
-                }}
-                className="flex-1 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium rounded-xl transition-all"
-              >
-                Use anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Close confirmation dialog */}
       {showCloseConfirm && (

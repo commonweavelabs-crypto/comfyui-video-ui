@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { renderSettingsApi } from '../api'
 import type { Scene } from '../types'
+import OutputFormatPicker from './OutputFormatPicker'
 
 interface ProjectSettingsModalProps {
   scriptId: string
@@ -181,153 +182,12 @@ export default function ProjectSettingsModal({
             </div>
           )}
 
-          {/* Preset grid */}
-          <div>
-            <div className="text-[10px] font-medium text-zinc-500 mb-2 tracking-[1px] uppercase">
-              1. Frame size — applies to every scene
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {Object.entries(presets).map(([key, p]) => {
-                const active = selected === key && current?.preset === key
-                const g = grading[key]
-                const verdict = g?.verdict || 'recommended'
-                const isExceeds = verdict === 'exceeds'
-                const isHeavy = verdict === 'heavy'
-                return (
-                  <button
-                    key={key}
-                    onClick={() => choose(key)}
-                    disabled={saving}
-                    title={g?.reason || p.note}
-                    className={`text-left px-3 py-2.5 rounded-xl border transition-all ${
-                      isExceeds
-                        ? 'border-zinc-800 bg-zinc-950 opacity-40 hover:opacity-60'
-                        : active
-                          ? 'border-emerald-600/60 bg-emerald-600/10'
-                          : isHeavy
-                            ? 'border-yellow-700/40 hover:border-yellow-700 bg-zinc-950'
-                            : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950'
-                    }`}
-                  >
-                    <div className={`text-xs font-medium flex items-center gap-1.5 ${
-                      isExceeds ? 'text-zinc-600' : active ? 'text-emerald-400' : isHeavy ? 'text-yellow-500' : 'text-zinc-200'
-                    }`}>
-                      {p.label}
-                      {isHeavy && (
-                        <span className="text-[8px] px-1 py-px rounded bg-yellow-900/40 text-yellow-500 uppercase">Slow</span>
-                      )}
-                      {isExceeds && (
-                        <span className="text-[8px] px-1 py-px rounded bg-red-900/40 text-red-500 uppercase">Not rec.</span>
-                      )}
-                    </div>
-                    <div className="text-[10px] text-zinc-600 mt-0.5">
-                      {p.width && p.height ? `${p.width}x${p.height}` : 'Set custom size'}
-                    </div>
-                    <div className="text-[9px] text-zinc-700 leading-tight mt-0.5">{p.note}</div>
-                  </button>
-                )
-              })}
-            </div>
-            {hardware && (
-              <div className="text-[10px] text-zinc-600 mt-2">
-                Graded for {hardware.gpu_name || 'your GPU'}
-                {hardware.vram_total_gb ? ` (${hardware.vram_total_gb.toFixed(0)}GB)` : ''} — grayed presets exceed this
-                hardware or the model's supported resolution.
-              </div>
-            )}
-          </div>
-
-          {/* Custom inputs */}
-          {selected === 'custom' && (
-            <div className="flex items-center gap-2">
-              <input type="number" placeholder="W" value={customW} onChange={(e) => setCustomW(e.target.value)}
-                className="w-20 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-200 text-center focus:outline-none focus:border-zinc-600" />
-              <span className="text-xs text-zinc-600">x</span>
-              <input type="number" placeholder="H" value={customH} onChange={(e) => setCustomH(e.target.value)}
-                className="w-20 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-200 text-center focus:outline-none focus:border-zinc-600" />
-              <input type="number" placeholder="FPS" value={customFps} onChange={(e) => setCustomFps(e.target.value)}
-                className="w-16 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-200 text-center focus:outline-none focus:border-zinc-600" />
-            </div>
-          )}
-
-          {/* Frame rate — independent of resolution (unbound, Gui 2026-09-07) */}
-          <div>
-            <div className="text-[10px] font-medium text-zinc-500 mb-2 tracking-[1px] uppercase">
-              2. Frame rate — independent of size
-            </div>
-            <div className="grid grid-cols-4 gap-1.5">
-              {fpsOptions.map((opt) => {
-                const active = current?.fps === opt.fps
-                const exceedsCap = opt.fps > fpsCap
-                return (
-                  <button
-                    key={opt.fps}
-                    onClick={() => chooseFps(opt.fps)}
-                    disabled={saving}
-                    title={exceedsCap
-                      ? `Above the recommended maximum (${fpsCap}fps) for ${hardware?.vram_total_gb?.toFixed(0) || 'this'}GB — expect very long renders`
-                      : opt.note}
-                    className={`text-left px-2.5 py-2 rounded-lg border transition-all ${
-                      exceedsCap
-                        ? 'border-zinc-800 bg-zinc-950 opacity-40 hover:opacity-60'
-                        : active
-                          ? 'border-emerald-600/60 bg-emerald-600/10'
-                          : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950'
-                    }`}
-                  >
-                    <div className={`text-[11px] font-medium flex items-center gap-1 ${
-                      exceedsCap ? 'text-zinc-600' : active ? 'text-emerald-400' : 'text-zinc-200'
-                    }`}>
-                      {opt.label}
-                      {exceedsCap && (
-                        <span className="text-[8px] px-1 py-px rounded bg-red-900/40 text-red-500 uppercase">Cap</span>
-                      )}
-                    </div>
-                    <div className="text-[9px] text-zinc-700 leading-tight mt-0.5 line-clamp-2">{opt.note}</div>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Custom fps */}
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                type="number"
-                placeholder={`Custom (${fpsCap} max rec.)`}
-                value={customFps}
-                onChange={(e) => setCustomFps(e.target.value)}
-                className="w-36 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-xs text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-600"
-              />
-              <button
-                onClick={() => {
-                  const f = Number(customFps)
-                  if (!f || f < 1) {
-                    setError('Enter a valid frame rate')
-                    return
-                  }
-                  if (f > fpsModelCeiling) {
-                    setError(`This model's tested envelope tops out around ${fpsModelCeiling}fps — higher values are untested and may fail.`)
-                    return
-                  }
-                  chooseFps(f, true)
-                }}
-                disabled={saving || !customFps}
-                className="px-3 py-1 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-[10px] font-semibold rounded-md transition-all"
-              >
-                Apply custom
-              </button>
-            </div>
-
-            {current && (
-              <div className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
-                Rendering at <span className="text-zinc-400 font-mono">{current.width}x{current.height}</span> @{' '}
-                <span className="text-zinc-400 font-mono">{current.fps}fps</span>
-                {' '}(from {current.source === 'project' ? 'project preset' : 'template default'}). Frame rate is the
-                project&apos;s canvas setting: higher fps = proportionally longer renders (frame count = duration x fps).
-              </div>
-            )}
-          </div>
-
+          {/* Shared output-format picker (frame size + frame rate) */}
+          <OutputFormatPicker
+            scriptId={scriptId}
+            scenes={scenes}
+            onSaved={onSaved}
+          />
           {savedFlash && (
             <div className="text-xs text-emerald-400">Saved.</div>
           )}
