@@ -10,6 +10,7 @@ interface ScriptLibraryProps {
   onCreated: () => void
   onSubmitScript: (script: Script) => void
   onDeleteScript: (script: Script) => void
+  onOpenSettings: (script: Script) => void
   pipelineProgress: { stage: string; message: string; percent: number } | null
 }
 
@@ -21,6 +22,7 @@ export default function ScriptLibrary({
   onCreated,
   onSubmitScript,
   onDeleteScript,
+  onOpenSettings,
   pipelineProgress,
 }: ScriptLibraryProps) {
   const [mode, setMode] = useState<'library' | 'create'>('library')
@@ -165,6 +167,16 @@ export default function ScriptLibrary({
                           Submit
                         </button>
                       )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onOpenSettings(script)
+                        }}
+                        className="text-[10px] px-2 py-1 rounded-lg bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300 transition-all"
+                        title="Project settings — output format (resolution + FPS)"
+                      >
+                        Settings
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()

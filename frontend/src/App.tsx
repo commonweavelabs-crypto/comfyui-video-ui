@@ -86,6 +86,7 @@ export default function App() {
   const [diskUsage, setDiskUsage] = useState<DiskUsageInfo | null>(null)
   const [showDiskUsage, setShowDiskUsage] = useState(false)
   const [showProjectSettings, setShowProjectSettings] = useState(false)
+  const [librarySettingsScript, setLibrarySettingsScript] = useState<Script | null>(null)
   const [cleaningOutputs, setCleaningOutputs] = useState(false)
 
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -1081,6 +1082,7 @@ export default function App() {
                 onCreated={loadScripts}
                 onSubmitScript={handleSubmitScript}
                 onDeleteScript={handleDeleteScript}
+                onOpenSettings={(script) => setLibrarySettingsScript(script)}
                 pipelineProgress={pipelineProgress}
               />
             ) : sidebarTab === 'frames' ? (
@@ -1374,6 +1376,26 @@ export default function App() {
             try {
               const sceneList = await scenesApi.list(activeScript.id)
               setScenes(sceneList)
+            } catch (e) {
+              console.error('Failed to refresh scenes:', e)
+            }
+          }}
+        />
+      )}
+
+      {/* Project settings modal — opened from the Library sidebar (works without opening the project) */}
+      {librarySettingsScript && (
+        <ProjectSettingsModal
+          scriptId={librarySettingsScript.id}
+          projectTitle={librarySettingsScript.title}
+          scenes={librarySettingsScript.id === activeScript?.id ? scenes : []}
+          onClose={() => setLibrarySettingsScript(null)}
+          onSaved={async () => {
+            try {
+              const sceneList = await scenesApi.list(librarySettingsScript.id)
+              if (librarySettingsScript.id === activeScript?.id) {
+                setScenes(sceneList)
+              }
             } catch (e) {
               console.error('Failed to refresh scenes:', e)
             }
