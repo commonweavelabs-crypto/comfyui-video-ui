@@ -134,7 +134,16 @@ timer, broadcasts to clients). Roadmap:
    cropped or padded to fit WxH".
 4. **Library sidebar Settings button** per project row — opens the same modal
    without opening the project.
-5. **End-to-end verified:** presets persist (reels 1080x1920@30 survived
+5. **PLACEMENT (Gui, 2026-09-07):** the header Settings button was WRONG — it sat
+   next to the app wordmark and implied a global setting. Project Settings lives
+   in the TIMELINE action row (Settings → Export → Submit All Ready, same line as
+   the Timeline heading) — inside the project window so it reads per-project.
+6. **"New empty project" also requires format (Gui, 2026-09-07):** the landing
+   inline panel asks format FIRST (graded grid) then name; Create gated on both.
+   Includes canvas explanation: "frame size and frame rate apply to every initial
+   frame and are the final render size for the whole video (unless you upscale at
+   the end)." Both creation paths (wizard + landing) enforce format-before-create.
+7. **End-to-end verified:** presets persist (reels 1080x1920@30 survived
    GET-after-PUT), grading matches Gui's 16GB/5070 Ti reality, all modals clean
    (zero JS errors). Commits: creation picker, grading, settings modal, library.
 
