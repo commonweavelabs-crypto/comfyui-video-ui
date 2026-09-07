@@ -86,16 +86,28 @@ def get_script_content(script_id: str) -> str | None:
 # wrong. Presets are labeled by destination so users pick the right one for where
 # the video is going.
 PLATFORM_PRESETS: dict[str, dict] = {
-    "youtube_720p":   {"label": "YouTube 720p",         "width": 1280, "height": 720,  "fps": 24, "note": "Light horizontal — for 8-12GB cards"},
-    "youtube_1080p":  {"label": "YouTube 1080p",        "width": 1920, "height": 1080, "fps": 24, "note": "Standard YouTube horizontal"},
-    "youtube_1440p":  {"label": "YouTube 1440p",        "width": 2560, "height": 1440, "fps": 24, "note": "QHD horizontal — 16GB+ cards"},
-    "youtube_4k":     {"label": "YouTube 4K",           "width": 3840, "height": 2160, "fps": 24, "note": "High-res horizontal — very heavy render"},
-    "reels_tiktok":   {"label": "Instagram Reels / TikTok", "width": 1080, "height": 1920, "fps": 30, "note": "Vertical short-form (9:16)"},
-    "reels_720p":     {"label": "Reels / TikTok 720p",  "width": 720,  "height": 1280, "fps": 30, "note": "Light vertical — for 8-12GB cards"},
-    "instagram_feed": {"label": "Instagram Feed",       "width": 1080, "height": 1350, "fps": 30, "note": "IG portrait feed post (4:5)"},
-    "square":         {"label": "Square 1:1",           "width": 1080, "height": 1080, "fps": 30, "note": "Feed-neutral, works everywhere"},
-    "custom":         {"label": "Custom",               "width": None, "height": None, "fps": None, "note": "Manual size + FPS"},
+    # Resolution presets — FPS is SEPARATE (unbound, Gui 2026-09-07): frame size
+    # is driven by destination (aspect ratio); frame rate is a look/time choice.
+    "youtube_720p":   {"label": "YouTube 720p",         "width": 1280, "height": 720,  "note": "Light horizontal — for 8-12GB cards"},
+    "youtube_1080p":  {"label": "YouTube 1080p",        "width": 1920, "height": 1080, "note": "Standard YouTube horizontal"},
+    "youtube_1440p":  {"label": "YouTube 1440p",        "width": 2560, "height": 1440, "note": "QHD horizontal — 16GB+ cards"},
+    "youtube_4k":     {"label": "YouTube 4K",           "width": 3840, "height": 2160, "note": "High-res horizontal — very heavy render"},
+    "reels_tiktok":   {"label": "Instagram Reels / TikTok", "width": 1080, "height": 1920, "note": "Vertical short-form (9:16)"},
+    "reels_720p":     {"label": "Reels / TikTok 720p",  "width": 720,  "height": 1280, "note": "Light vertical — for 8-12GB cards"},
+    "instagram_feed": {"label": "Instagram Feed",       "width": 1080, "height": 1350, "note": "IG portrait feed post (4:5)"},
+    "square":         {"label": "Square 1:1",           "width": 1080, "height": 1080, "note": "Feed-neutral, works everywhere"},
+    "custom":         {"label": "Custom",               "width": None, "height": None, "note": "Manual size"},
 }
+
+# Common frame rates — independent of resolution (Gui 2026-09-07). 24 = cinematic,
+# 30 = standard/phone footage, 60 = smooth/action. Higher fps = proportionally
+# longer render times (frame_count = duration * fps).
+FPS_OPTIONS: list[dict] = [
+    {"fps": 12, "label": "12 fps", "note": "Stylized / stop-motion feel — fastest renders"},
+    {"fps": 24, "label": "24 fps", "note": "Cinematic standard (film look)"},
+    {"fps": 30, "label": "30 fps", "note": "Standard video / phone footage"},
+    {"fps": 60, "label": "60 fps", "note": "Smooth motion — 2.5x the render work of 24"},
+]
 
 # Model resolution ceilings (official max/recommended resolution per model family).
 # Checked against the checkpoint name in the workflow; unknown models get a
@@ -217,6 +229,7 @@ def get_graded_presets(script_id: str | None = None) -> dict:
         "grading": grading,
         "hardware": {"gpu_name": gpu_name, "vram_total_gb": vram_gb},
         "model_max_mp": round(max_mp, 2),
+        "fps_options": FPS_OPTIONS,
     }
 
 
@@ -276,14 +289,23 @@ def _load_workflow_public() -> dict:
 def set_project_render_settings(script_id: str, preset: str,
                                 width: int | None = None, height: int | None = None,
                                 fps: int | None = None) -> dict | None:
-    """Set project-level render geometry. For 'custom', width/height/fps are used
-    directly; for named presets the preset values fill any gaps."""
+    """Set project-level render geometry.
+
+    Resolution comes from the preset (or width/height for 'custom').
+    FPS is INDEPENDENT of resolution (unbound, Gui 2026-09-07): the explicit
+    fps argument wins; otherwise the existing project fps is kept; otherwise
+    the 24fps default.
+    """
     preset_info = PLATFORM_PRESETS.get(preset)
     if preset_info is None:
         return None
     resolved_w = width if (preset == "custom" and width) else (preset_info["width"] or width)
     resolved_h = height if (preset == "custom" and height) else (preset_info["height"] or height)
-    resolved_fps = fps if (preset == "custom" and fps) else (preset_info["fps"] or fps)
+
+    # FPS layering: explicit arg > already-set project fps > default 24
+    existing = get_script(script_id) or {}
+    existing_fps = (existing.get("render_settings") or {}).get("fps")
+    resolved_fps = fps or existing_fps or 24
 
     catalog = load_catalog()
     for s in catalog.get("scripts", []):

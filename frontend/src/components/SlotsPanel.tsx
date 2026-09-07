@@ -45,12 +45,16 @@ export default function SlotsPanel({ autoLoad = true, scriptId }: SlotsPanelProp
   const [customH, setCustomH] = useState<string>('')
   const [customFps, setCustomFps] = useState<string>('')
   const [savingPreset, setSavingPreset] = useState(false)
+  const [fps_options, setFpsOptions] = useState<Array<{ fps: number; label: string; note: string }>>([])
+  const [hardware, setHardware] = useState<{ gpu_name: string | null; vram_total_gb: number | null } | null>(null)
 
   const loadProjectSettings = useCallback(async () => {
     if (!scriptId) return
     try {
       const res = await renderSettingsApi.get(scriptId)
       setPresets(res.presets || {})
+      setHardware(res.hardware || null)
+      setFpsOptions(res.fps_options || [])
       setCurrent(res.current || null)
       if (res.current?.preset === 'custom') {
         setCustomW(String(res.current.width))
@@ -93,6 +97,24 @@ export default function SlotsPanel({ autoLoad = true, scriptId }: SlotsPanelProp
   useEffect(() => {
     void loadProjectSettings()
   }, [loadProjectSettings])
+
+  // FPS is independent of resolution (unbound, Gui 2026-09-07): save fps only,
+  // keeping the current preset/width/height untouched.
+  const applyFps = useCallback(async (fps: number) => {
+    if (!scriptId) return
+    setSavingPreset(true)
+    setError(null)
+    try {
+      const res = await renderSettingsApi.set(scriptId, { preset: current?.preset || 'custom', fps })
+      setCurrent(res.current)
+      setSavedFlash('fps')
+      setTimeout(() => setSavedFlash((cur) => (cur === 'fps' ? null : cur)), 1500)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save frame rate')
+    } finally {
+      setSavingPreset(false)
+    }
+  }, [scriptId, current?.preset])
 
   const persist = useCallback(
     async (slot: WorkflowSlot, value: number | boolean) => {
@@ -224,25 +246,25 @@ export default function SlotsPanel({ autoLoad = true, scriptId }: SlotsPanelProp
             <div className="py-3 text-[11px] text-zinc-500">Loading workflow slots...</div>
           ) : (
             <>
-              {/* ── Project resolution + FPS (applies to ALL scenes) ── */}
+              {/* ── 1. Frame size (resolution) — applies to ALL scenes ── */}
               {scriptId && (
                 <div className="pt-2 pb-3 border-b border-zinc-800">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[9px] text-zinc-500 tracking-[1px] uppercase">
-                      Output format — applies to every scene
+                      1. Frame size — applies to every scene
                     </span>
                     {savedFlash === 'preset' && (
                       <span className="text-[10px] text-emerald-400 tracking-[0.8px] uppercase">Saved</span>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {Object.entries(presets).map(([key, p]) => {
                       const active = current?.preset === key
                       return (
                         <button
                           key={key}
                           onClick={() => void applyPreset(key)}
-                          disabled={savingPreset || (key === 'custom' && (!customW || !customH || !customFps))}
+                          disabled={savingPreset}
                           title={presets[key]?.note}
                           className={`text-left px-2.5 py-2 rounded-lg border transition-all disabled:opacity-40 ${
                             active
@@ -255,10 +277,9 @@ export default function SlotsPanel({ autoLoad = true, scriptId }: SlotsPanelProp
                           </div>
                           <div className="text-[9px] text-zinc-600 mt-0.5">
                             {presets[key].width && presets[key].height
-                              ? `${presets[key].width}x${presets[key].height} · ${presets[key].fps}fps`
+                              ? `${presets[key].width}x${presets[key].height}`
                               : 'Set custom size'}
                           </div>
-                          <div className="text-[9px] text-zinc-700 leading-tight mt-0.5">{presets[key].note}</div>
                         </button>
                       )
                     })}
@@ -270,8 +291,6 @@ export default function SlotsPanel({ autoLoad = true, scriptId }: SlotsPanelProp
                       <span className="text-xs text-zinc-600">x</span>
                       <input type="number" placeholder="H" value={customH} onChange={(e) => setCustomH(e.target.value)}
                         className="w-16 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-xs text-zinc-200 text-center focus:outline-none focus:border-zinc-600" />
-                      <input type="number" placeholder="FPS" value={customFps} onChange={(e) => setCustomFps(e.target.value)}
-                        className="w-14 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-xs text-zinc-200 text-center focus:outline-none focus:border-zinc-600" />
                       <button onClick={() => void applyPreset('custom')} disabled={savingPreset}
                         className="px-3 py-1 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-[10px] font-semibold rounded-md transition-all">
                         Apply
@@ -286,6 +305,46 @@ export default function SlotsPanel({ autoLoad = true, scriptId }: SlotsPanelProp
                       Custom size instead
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* ── 2. Frame rate — independent of resolution ── */}
+              {scriptId && (
+                <div className="pt-2 pb-3 border-b border-zinc-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[9px] text-zinc-500 tracking-[1px] uppercase">
+                      2. Frame rate
+                    </span>
+                    {savedFlash === 'fps' && (
+                      <span className="text-[10px] text-emerald-400 tracking-[0.8px] uppercase">Saved</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(fps_options.length > 0
+                      ? fps_options
+                      : [{ fps: 12, label: '12 fps', note: '' }, { fps: 24, label: '24 fps', note: '' }, { fps: 30, label: '30 fps', note: '' }, { fps: 60, label: '60 fps', note: '' }]
+                    ).map((opt) => {
+                      const active = current?.fps === opt.fps
+                      return (
+                        <button
+                          key={opt.fps}
+                          onClick={() => void applyFps(opt.fps)}
+                          disabled={savingPreset}
+                          title={opt.note}
+                          className={`text-left px-2.5 py-2 rounded-lg border transition-all disabled:opacity-40 ${
+                            active
+                              ? 'border-emerald-600/60 bg-emerald-600/10'
+                              : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950'
+                          }`}
+                        >
+                          <div className={`text-[11px] font-medium ${active ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                            {opt.label}
+                          </div>
+                          {opt.note && <div className="text-[9px] text-zinc-700 leading-tight mt-0.5">{opt.note}</div>}
+                        </button>
+                      )
+                    })}
+                  </div>
                   {current && (
                     <div className="text-[10px] text-zinc-600 mt-1.5">
                       Rendering at <span className="text-zinc-400 font-mono">{current.width}x{current.height}</span> @ <span className="text-zinc-400 font-mono">{current.fps}fps</span>

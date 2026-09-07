@@ -361,7 +361,7 @@ export default function WorkflowWizard({
                             </div>
                             <div className="text-[9px] text-zinc-600 mt-0.5">
                               {presets[key].width && presets[key].height
-                                ? `${presets[key].width}x${presets[key].height} · ${presets[key].fps}fps`
+                                ? `${presets[key].width}x${presets[key].height}`
                                 : 'Set size after creation'}
                             </div>
                           </button>

@@ -6,14 +6,8 @@
       "tags": [],
       "status": "draft",
       "created": "2026-08-22T23:25:35.840707+00:00",
-      "updated": "2026-09-07T21:41:35.689181+00:00",
-      "scene_count": 12,
-      "render_settings": {
-        "preset": "youtube_1440p",
-        "width": 2560,
-        "height": 1440,
-        "fps": 24
-      }
+      "updated": "2026-09-07T22:00:10.634810+00:00",
+      "scene_count": 12
     },
     {
       "script_id": "20260822-b8bed75e",

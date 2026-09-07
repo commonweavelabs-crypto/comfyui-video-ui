@@ -182,7 +182,7 @@ export default function ProjectSettingsModal({
                       )}
                     </div>
                     <div className="text-[10px] text-zinc-600 mt-0.5">
-                      {p.width && p.height ? `${p.width}x${p.height} · ${p.fps}fps` : 'Set custom size'}
+                      {p.width && p.height ? `${p.width}x${p.height}` : 'Set custom size'}
                     </div>
                     <div className="text-[9px] text-zinc-700 leading-tight mt-0.5">{p.note}</div>
                   </button>
