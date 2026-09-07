@@ -168,6 +168,18 @@ async def workflow_assets():
     return await get_workflow_assets_status()
 
 
+# Event-stream health (roadmap #2) — is the native event socket connected?
+@router.get("/events/health")
+async def event_health():
+    import time
+    from comfy_events import comfy_events
+    return {
+        "connected": comfy_events.connected,
+        "last_event_age_s": round(time.time() - comfy_events.last_event_ts, 1)
+                             if comfy_events.last_event_ts > 0 else None,
+    }
+
+
 # ── Workflow slot editing (roadmap #1) ───────────────────────────────────────
 
 @router.get("/slots")
@@ -249,6 +261,8 @@ async def submit_scene(body: SubmitSceneBody):
     result = await submit_scene_to_comfyui(scene, body.script_id)
 
     if result.get("success"):
+        # Register for ComfyUI event routing (roadmap #2)
+        manager.index_prompt(result["prompt_id"], body.script_id, body.scene_id)
         scene = store.update_scene(body.script_id, body.scene_id, {
             "status": "queued",
             "prompt_id": result["prompt_id"],
@@ -303,6 +317,8 @@ async def submit_all_scenes(body: SubmitAllBody):
         result = await submit_scene_to_comfyui(scene, body.script_id)
 
         if result.get("success"):
+            # Register for ComfyUI event routing (roadmap #2)
+            manager.index_prompt(result["prompt_id"], body.script_id, sid)
             scene = store.update_scene(body.script_id, sid, {
                 "status": "queued",
                 "prompt_id": result["prompt_id"],
