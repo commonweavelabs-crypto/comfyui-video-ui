@@ -175,3 +175,36 @@ timer, broadcasts to clients). Roadmap:
   precedence: flag > env > persisted config > 8188 default).
 - Hermes `mcp add` multi-`--args` bug avoided: comfy-mcp is a single console
   script, no args needed.
+
+## 7. Next-stage milestones (brainstorm, 2026-09-07 — not started)
+
+### M-A. Reference-sheet generation entry (Gui's idea — "let the AI take flight")
+The current pipeline requires initial frames. A **reference-sheet-first entry**
+lets users skip that: feed a character sheet / environment sheet, the model
+generates the video.
+- Models already on disk (ComfyUI-Shared/models/diffusion_models/):
+  `ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors` and
+  `minimax_h3_fl2va_pruned_int8_convrot.safetensors`. No saved user workflow
+  for either yet — build/template one when we start this milestone.
+- Positioning: the "leave it up to the AI" path from the landing page (fresh,
+  out-of-box experience). Users who want control can still supply initial frames.
+- Design questions to settle: per-project model choice? new wizard branch? how
+  character sheets map to the existing scene/initial-frame pipeline.
+
+### M-B. Angle-sheet generator (integrate existing workflow)
+Gui has a working config workflow that takes ONE image and generates multiple
+angles of the subject. Integrate in-app: user uploads one image → generates
+angle variants → picks one as the scene's initial frame. No external software.
+- Downstream of M-A (a character sheet from M-A could feed this).
+- Keep it inside the timeline UX (scene card → "generate angles" → picker).
+
+### M-C. First end-to-end user test (ACTIVE — starting now)
+Fresh out-of-box path: landing "let's write your next movie idea" → new empty
+project (format + name gated) → script/scenes → timeline → submit → real output.
+Expectation: fresh project has no initial frames — first milestone is frame-gen
+on scene 1. Plan B if script formatting blocks: submit a ready scene from test2.
+
+### M-D. Telemetry / hardware data collection (backlog, opt-in)
+Render timing per GPU/VRAM/resolution/duration/fps/checkpoint → local estimates
+per machine. Community submission strictly opt-in (default OFF, show-what's-sent,
+export before send). Foundation exists: `render_stats.json` logs real timings.

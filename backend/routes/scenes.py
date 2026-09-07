@@ -188,6 +188,10 @@ async def get_scene(script_id: str, scene_id: str):
 
 # Per-scene override fields (roadmap #4). These support "clear to template default"
 # via explicit null — unlike the other optional fields, where null means "don't touch".
+# DORMANT (2026-09-07): the UI no longer sends per-scene geometry — frame size/fps
+# are project-level (Project Settings). This API stays for API consumers and a
+# possible per-scene opt-in later. Known quirk: the null-clear path here bypasses
+# the project-level grading/warning flow by design.
 _OVERRIDE_FIELDS = ("width", "height", "fps")
 
 
