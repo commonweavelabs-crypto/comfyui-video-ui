@@ -392,6 +392,20 @@ export default function App() {
     setScenes((prev) => prev.map((s) => (s.id === sceneId ? { ...s, ...updates } : s)))
   }, [])
 
+  const handleRenderOverrideChange = useCallback(
+    async (sceneId: string, field: 'width' | 'height' | 'fps', value: number | null) => {
+      updateScene(sceneId, { [field]: value } as Partial<Scene>)
+      if (activeScript) {
+        try {
+          await scenesApi.update(activeScript.id, sceneId, { [field]: value } as Partial<Scene>)
+        } catch (e) {
+          console.error(`Failed to save ${field}:`, e)
+        }
+      }
+    },
+    [activeScript, updateScene],
+  )
+
   const handlePromptChange = useCallback(
     async (sceneId: string, prompt: string) => {
       updateScene(sceneId, { prompt })
@@ -1102,6 +1116,7 @@ export default function App() {
             scriptId={activeScript?.id ?? ''}
             onPromptChange={handlePromptChange}
             onDurationChange={handleDurationChange}
+            onRenderOverrideChange={handleRenderOverrideChange}
             onSubmit={handleSubmitScene}
             onDelete={handleDeleteScene}
             onInsert={handleInsertScene}

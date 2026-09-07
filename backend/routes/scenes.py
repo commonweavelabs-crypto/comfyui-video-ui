@@ -46,6 +46,11 @@ class SceneUpdate(BaseModel):
     prompt_id: str | None = None
     video_path: str | None = None
     video_filename: str | None = None
+    # Per-scene render overrides (roadmap #4 inline quick-edit). None = use
+    # the template slot value from the workflow JSON (SlotsPanel defaults).
+    width: int | None = None
+    height: int | None = None
+    fps: int | None = None
 
 
 class ReorderBody(BaseModel):
@@ -181,10 +186,27 @@ async def get_scene(script_id: str, scene_id: str):
     return _enrich_scene(script_id, scene)
 
 
+# Per-scene override fields (roadmap #4). These support "clear to template default"
+# via explicit null — unlike the other optional fields, where null means "don't touch".
+_OVERRIDE_FIELDS = ("width", "height", "fps")
+
+
+def _split_updates(body: "SceneUpdate") -> dict:
+    """Split a SceneUpdate into store updates, honoring explicit nulls for
+    override fields (null = clear the override, fall back to template)."""
+    dump = body.model_dump()
+    updates = {}
+    for k, v in dump.items():
+        if k in _OVERRIDE_FIELDS:
+            updates[k] = v  # explicit null allowed — clears the override
+        elif v is not None:
+            updates[k] = v
+    return updates
+
+
 @router.put("/{scene_id}")
 async def update_scene(script_id: str, scene_id: str, body: SceneUpdate):
-    updates = {k: v for k, v in body.model_dump().items() if v is not None}
-    scene = store.update_scene(script_id, scene_id, updates)
+    scene = store.update_scene(script_id, scene_id, _split_updates(body))
     if not scene:
         raise HTTPException(404, "Scene not found")
     return _enrich_scene(script_id, scene)
@@ -194,8 +216,7 @@ async def update_scene(script_id: str, scene_id: str, body: SceneUpdate):
 @router.patch("/{scene_id}")
 async def patch_scene(script_id: str, scene_id: str, body: SceneUpdate):
     """PATCH alias for partial scene updates (same logic as PUT)."""
-    updates = {k: v for k, v in body.model_dump().items() if v is not None}
-    scene = store.update_scene(script_id, scene_id, updates)
+    scene = store.update_scene(script_id, scene_id, _split_updates(body))
     if not scene:
         raise HTTPException(404, "Scene not found")
     return _enrich_scene(script_id, scene)

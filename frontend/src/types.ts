@@ -43,6 +43,10 @@ export interface Scene {
   created_at: string
   updated_at: string
   broll_filename: string | null
+  // Per-scene render overrides (roadmap #4). Null = use template default.
+  width?: number | null
+  height?: number | null
+  fps?: number | null
   broll_url: string | null
   broll_volume: number
   renders: RenderVersion[]

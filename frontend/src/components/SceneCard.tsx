@@ -21,6 +21,7 @@ interface SceneCardProps {
   scriptId: string
   onPromptChange: (sceneId: string, prompt: string) => void
   onDurationChange: (sceneId: string, duration: number) => void
+  onRenderOverrideChange: (sceneId: string, field: 'width' | 'height' | 'fps', value: number | null) => void
   onSubmit: (sceneId: string) => void
   onDelete: (sceneId: string) => void
   onFrameUpload: (sceneId: string, file: File) => void
@@ -42,6 +43,7 @@ export default function SceneCard({
   scriptId,
   onPromptChange,
   onDurationChange,
+  onRenderOverrideChange,
   onSubmit,
   onDelete,
   onFrameUpload,
@@ -661,8 +663,8 @@ export default function SceneCard({
         />
       </div>
 
-      {/* Meta row: Duration */}
-      <div className="px-4 pt-3 flex items-center gap-4">
+      {/* Meta row: Duration | Resolution | FPS */}
+      <div className="px-4 pt-3 flex items-center gap-3 flex-wrap">
         <div>
           <div className="text-[10px] text-zinc-600 tracking-[0.8px] uppercase">Duration</div>
           <div className="flex items-center gap-1.5 mt-px">
@@ -675,6 +677,56 @@ export default function SceneCard({
             />
             <span className="text-xs text-zinc-500">sec</span>
           </div>
+        </div>
+        <div>
+          <div className="text-[10px] text-zinc-600 tracking-[0.8px] uppercase">Resolution</div>
+          <div className="flex items-center gap-1.5 mt-px">
+            <select
+              value={
+                scene.width && scene.height
+                  ? `${scene.width}x${scene.height}`
+                  : 'template'
+              }
+              onChange={(e) => {
+                const v = e.target.value
+                if (v === 'template') {
+                  onRenderOverrideChange(scene.id, 'width', null)
+                  onRenderOverrideChange(scene.id, 'height', null)
+                } else {
+                  const [w, h] = v.split('x').map(Number)
+                  onRenderOverrideChange(scene.id, 'width', w)
+                  onRenderOverrideChange(scene.id, 'height', h)
+                }
+              }}
+              disabled={scene.status === 'rendering' || scene.status === 'queued'}
+              className="bg-zinc-950 border border-zinc-800 rounded-md px-1.5 py-0.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-700 disabled:opacity-40"
+              title="Per-scene render size. 'Template' uses the Workflow Settings default."
+            >
+              <option value="template">Template</option>
+              <option value="1600x900">16:9 — 1600x900</option>
+              <option value="1280x720">16:9 — 1280x720</option>
+              <option value="900x1600">9:16 — 900x1600</option>
+              <option value="720x1280">9:16 — 720x1280</option>
+              <option value="1024x1024">1:1 — 1024x1024</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] text-zinc-600 tracking-[0.8px] uppercase">FPS</div>
+          <input
+            type="number"
+            min={8}
+            max={60}
+            value={scene.fps ?? ''}
+            placeholder="24"
+            onChange={(e) => {
+              const v = e.target.value === '' ? null : Number(e.target.value)
+              onRenderOverrideChange(scene.id, 'fps', v)
+            }}
+            disabled={scene.status === 'rendering' || scene.status === 'queued'}
+            className="w-10 bg-zinc-950 border border-zinc-800 rounded-md px-1.5 py-0.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-700 text-center placeholder:text-zinc-700 disabled:opacity-40"
+            title="Per-scene FPS. Empty = template default."
+          />
         </div>
         {scene.comfyui_prompt_id && (
           <div className="ml-auto text-right">
