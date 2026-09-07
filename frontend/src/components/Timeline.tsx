@@ -22,6 +22,7 @@ interface TimelineProps {
   onBrollRemove: (sceneId: string) => void
   onBrollVolumeChange: (sceneId: string, volume: number) => void
   onExport: () => void
+  onOpenProjectSettings: () => void
   onSwitchRender: (sceneId: string, renderId: string) => void
   onDeleteRender: (sceneId: string, renderId: string) => void
   onReorder: (sceneIds: string[]) => void
@@ -47,6 +48,7 @@ export default function Timeline({
   onBrollRemove,
   onBrollVolumeChange,
   onExport,
+  onOpenProjectSettings,
   onSwitchRender,
   onDeleteRender,
   onReorder,
@@ -352,6 +354,13 @@ export default function Timeline({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenProjectSettings}
+            className="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-sm font-semibold transition-all tracking-[0.3px] flex items-center gap-2"
+            title="Project settings — output format (resolution + FPS), applies to every scene"
+          >
+            Settings
+          </button>
           <button
             onClick={onExport}
             disabled={scenes.length === 0}

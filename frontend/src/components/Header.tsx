@@ -7,8 +7,6 @@ interface HeaderProps {
   comfyuiStatus: ComfyUIStatus | null
   sceneCount: number
   activeScriptTitle: string | null
-  activeScriptId: string | null
-  onOpenProjectSettings: () => void
   onStartWizard: () => void
   queueTimeEstimate: number | null
   diskSizeFormatted: string | null
@@ -29,8 +27,6 @@ export default function Header({
   comfyuiStatus,
   sceneCount,
   activeScriptTitle,
-  activeScriptId,
-  onOpenProjectSettings,
   onStartWizard,
   queueTimeEstimate,
   diskSizeFormatted,
@@ -121,17 +117,6 @@ export default function Header({
 
         {/* Status indicators */}
         <div className="flex items-center gap-2.5">
-          {/* Project settings — visible when a project is active (Gui 2026-09-07) */}
-          {activeScriptId && (
-            <button
-              onClick={onOpenProjectSettings}
-              className="px-4 py-1.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-sm text-zinc-400 hover:border-zinc-700 hover:text-zinc-300 transition-all"
-              title="Project settings — output format (resolution + FPS), applies to every scene"
-            >
-              Settings
-            </button>
-          )}
-
           {/* Start Wizard button */}
           <button
             onClick={onStartWizard}

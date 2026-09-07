@@ -995,8 +995,6 @@ export default function App() {
         comfyuiStatus={comfyuiStatus}
         sceneCount={scenes.length}
         activeScriptTitle={activeScript?.title ?? null}
-        activeScriptId={activeScript?.id ?? null}
-        onOpenProjectSettings={() => setShowProjectSettings(true)}
         onStartWizard={handleStartWizard}
         queueTimeEstimate={queueTimeEstimate > 0 ? queueTimeEstimate : null}
         diskSizeFormatted={diskUsage?.total_size_formatted ?? null}
@@ -1123,6 +1121,7 @@ export default function App() {
             onBrollRemove={handleBrollRemove}
             onBrollVolumeChange={handleBrollVolumeChange}
             onExport={() => setShowExportPanel(true)}
+            onOpenProjectSettings={() => setShowProjectSettings(true)}
             onSwitchRender={handleSwitchRender}
             onDeleteRender={handleDeleteRender}
             onReorder={handleReorder}
