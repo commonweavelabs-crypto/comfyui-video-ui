@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Scene, Script, PipelineProgress } from '../types'
-import { scriptsApi, scenesApi, comfyuiApi, musicApi } from '../api'
+import { scriptsApi, scenesApi, comfyuiApi, musicApi, renderSettingsApi } from '../api'
 import MusicPanel from './MusicPanel'
 import ExportPanel from './ExportPanel'
 import SlotsPanel from './SlotsPanel'
@@ -45,17 +45,41 @@ export default function WorkflowWizard({
   const [pipelineSubmitted, setPipelineSubmitted] = useState(false)
   const [selectedMusicTrack, setSelectedMusicTrack] = useState<string | null>(null)
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Creation-time output format (Gui 2026-09-07: format is a start-of-project
+  // decision — no default, must be picked before Create is enabled)
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+  const [presets, setPresets] = useState<Record<string, { label: string; width: number | null; height: number | null; fps: number | null; note: string }>>({})
 
   // ─── Step 0: Script creation ──────────────────────────────
+  // Load platform presets when the wizard mounts in creation mode (no script yet)
+  useEffect(() => {
+    if (script) return
+    fetch('/api/scripts/render-presets')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.presets) setPresets(res.presets)
+      })
+      .catch(() => {
+        /* non-fatal: picker shows empty if the endpoint fails */
+      })
+  }, [script])
+
   const handleCreateScript = async () => {
-    if (!newTitle.trim() || !newContent.trim()) return
+    if (!newTitle.trim() || !newContent.trim() || !selectedPreset) return
     setCreating(true)
     setCreateError(null)
     try {
       const created = await scriptsApi.create(newTitle.trim(), newContent.trim())
+      // Persist the chosen output format on the new project immediately
+      try {
+        await renderSettingsApi.set(created.id, { preset: selectedPreset })
+      } catch (presetErr) {
+        console.error('Failed to save render preset:', presetErr)
+      }
       onScriptCreated(created)
       setNewTitle('')
       setNewContent('')
+      setSelectedPreset(null)
     } catch (e) {
       setCreateError(e instanceof Error ? e.message : 'Failed to create script')
     } finally {
@@ -285,9 +309,47 @@ export default function WorkflowWizard({
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {/* Output format — required first decision (Gui 2026-09-07) */}
                   <div>
                     <label className="text-[10px] font-medium text-zinc-500 mb-1.5 tracking-[1px] uppercase block">
-                      Title
+                      1. Output format — where is this going?
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {Object.entries(presets).map(([key, p]) => {
+                        const active = selectedPreset === key
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setSelectedPreset(key)}
+                            title={presets[key]?.note}
+                            className={`text-left px-2.5 py-2 rounded-lg border transition-all ${
+                              active
+                                ? 'border-emerald-600/60 bg-emerald-600/10'
+                                : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950'
+                            }`}
+                          >
+                            <div className={`text-[11px] font-medium ${active ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                              {presets[key].label}
+                            </div>
+                            <div className="text-[9px] text-zinc-600 mt-0.5">
+                              {presets[key].width && presets[key].height
+                                ? `${presets[key].width}x${presets[key].height} · ${presets[key].fps}fps`
+                                : 'Set size after creation'}
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {!selectedPreset && (
+                      <div className="text-[10px] text-zinc-600 mt-1.5">
+                        Pick where this video will be posted — it decides the frame size and frame rate for the whole project.
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-zinc-500 mb-1.5 tracking-[1px] uppercase block">
+                      2. Title
                     </label>
                     <input
                       type="text"
@@ -299,7 +361,7 @@ export default function WorkflowWizard({
                   </div>
                   <div>
                     <label className="text-[10px] font-medium text-zinc-500 mb-1.5 tracking-[1px] uppercase block">
-                      Script Content
+                      3. Script Content
                     </label>
                     <textarea
                       value={newContent}
@@ -315,7 +377,7 @@ export default function WorkflowWizard({
                   )}
                   <button
                     onClick={handleCreateScript}
-                    disabled={!newTitle.trim() || !newContent.trim() || creating}
+                    disabled={!newTitle.trim() || !newContent.trim() || !selectedPreset || creating}
                     className="px-6 py-3 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all tracking-[0.3px]"
                   >
                     {creating ? 'Creating...' : 'Create & Continue'}

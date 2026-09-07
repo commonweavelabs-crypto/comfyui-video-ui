@@ -31,6 +31,12 @@ async def list_scripts():
     return {"scripts": store.list_scripts()}
 
 
+# Platform presets — needed at project CREATION time (before any script exists)
+@router.get("/render-presets")
+async def render_presets():
+    return {"presets": store.PLATFORM_PRESETS}
+
+
 @router.get("/search")
 async def search_scripts(q: str):
     return {"results": store.search_scripts(q)}
