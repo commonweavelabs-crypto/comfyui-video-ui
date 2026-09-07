@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ComfyUI Video Workflow UI",
+    "output": "video-ui-rendered.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "render-path",
+        "label": "Render path",
+        "focus": [
+          "user",
+          "frontend",
+          "backend",
+          "pipeline",
+          "comfy",
+          "data"
+        ],
+        "note": "From browser click to rendered video on disk."
+      },
+      {
+        "id": "writing",
+        "label": "Writing (M5a)",
+        "focus": [
+          "user",
+          "frontend",
+          "backend",
+          "routes",
+          "llm",
+          "scriptstore",
+          "data"
+        ],
+        "note": "Script authoring, LLM formatting, versioned store."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Gui (User)",
+      "sublabel": "browser",
+      "pos": [
+        40,
+        200
+      ],
+      "size": [
+        120,
+        60
+      ]
+    },
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "React Frontend",
+      "sublabel": "Vite :8502",
+      "pos": [
+        250,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "12 components"
+    },
+    {
+      "id": "backend",
+      "type": "backend",
+      "label": "FastAPI Backend",
+      "sublabel": ":8503",
+      "pos": [
+        480,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "routes",
+      "type": "backend",
+      "label": "API Routes",
+      "sublabel": "/api (11 modules)",
+      "pos": [
+        700,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "ws",
+      "type": "backend",
+      "label": "WS Manager",
+      "sublabel": "live status + polling",
+      "pos": [
+        480,
+        520
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "pipeline",
+      "type": "backend",
+      "label": "Pipeline Engine",
+      "sublabel": "submit / poll / download",
+      "pos": [
+        700,
+        360
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "render timing"
+    },
+    {
+      "id": "llm",
+      "type": "backend",
+      "label": "LLM Adapter",
+      "sublabel": "GLM 5.3 / Ollama",
+      "pos": [
+        700,
+        40
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "scriptstore",
+      "type": "backend",
+      "label": "Script Store",
+      "sublabel": "fountain, copy-on-write",
+      "pos": [
+        920,
+        40
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "data",
+      "type": "database",
+      "label": "Data Dir",
+      "sublabel": "data/ assets + catalog.json",
+      "pos": [
+        920,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "comfy",
+      "type": "cloud",
+      "label": "ComfyUI",
+      "sublabel": "LTX 2.3 :8000",
+      "pos": [
+        920,
+        360
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "5070 Ti 16GB"
+    },
+    {
+      "id": "tts",
+      "type": "cloud",
+      "label": "VoxCPM2 TTS",
+      "sublabel": "per-scene voices",
+      "pos": [
+        920,
+        520
+      ],
+      "size": [
+        140,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Local Server (Windows)",
+      "wraps": [
+        "backend",
+        "routes",
+        "ws",
+        "pipeline",
+        "llm",
+        "scriptstore",
+        "data"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Compute",
+      "wraps": [
+        "comfy",
+        "tts"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "user",
+      "to": "frontend",
+      "label": "browser",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "c2",
+      "from": "frontend",
+      "to": "backend",
+      "label": "REST /api"
+    },
+    {
+      "id": "c3",
+      "from": "backend",
+      "to": "ws",
+      "label": "WS bidirectional",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        550,
+        290
+      ]
+    },
+    {
+      "id": "c4",
+      "from": "ws",
+      "to": "pipeline",
+      "label": "polling",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          550,
+          470
+        ],
+        [
+          770,
+          470
+        ]
+      ],
+      "labelAt": [
+        480,
+        510
+      ]
+    },
+    {
+      "id": "c5",
+      "from": "backend",
+      "to": "routes",
+      "label": "mount"
+    },
+    {
+      "id": "c6",
+      "from": "routes",
+      "to": "pipeline",
+      "label": "submit/poll",
+      "labelAt": [
+        770,
+        278
+      ]
+    },
+    {
+      "id": "c7",
+      "from": "pipeline",
+      "to": "comfy",
+      "label": "HTTP queue",
+      "variant": "emphasis",
+      "labelAt": [
+        990,
+        340
+      ]
+    },
+    {
+      "id": "c8",
+      "from": "pipeline",
+      "to": "data",
+      "label": "save renders",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "id": "c9",
+      "from": "routes",
+      "to": "llm",
+      "label": "writing",
+      "variant": "dashed"
+    },
+    {
+      "id": "c10",
+      "from": "routes",
+      "to": "scriptstore",
+      "label": "scripts",
+      "variant": "dashed"
+    },
+    {
+      "id": "c11",
+      "from": "llm",
+      "to": "scriptstore",
+      "label": "format"
+    },
+    {
+      "id": "c12",
+      "from": "scriptstore",
+      "to": "data",
+      "label": "versions",
+      "labelAt": [
+        990,
+        114
+      ]
+    },
+    {
+      "id": "c13",
+      "from": "routes",
+      "to": "data",
+      "label": "assets",
+      "labelAt": [
+        880,
+        254
+      ]
+    },
+    {
+      "id": "c14",
+      "from": "pipeline",
+      "to": "tts",
+      "label": "scene audio",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "top",
+      "labelAt": [
+        990,
+        470
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Render path",
+      "items": [
+        "Browser -> FastAPI -> Pipeline -> ComfyUI /prompt, poll /history",
+        "Rendered video lands in data/videos; timing stats recorded"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Writing (M5a)",
+      "items": [
+        "Fountain parser + copy-on-write store",
+        "LLM adapter: GLM 5.3 Flash, Ollama fallback"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Live updates",
+      "items": [
+        "WS manager polls ComfyUI queue, broadcasts to clients"
+      ]
+    }
+  ]
+}

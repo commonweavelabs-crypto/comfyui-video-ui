@@ -52,11 +52,11 @@
       "active_render_id": "9532f19e1b3a"
     },
     {
-      "scene_id": "1",
+      "scene_id": "8",
       "prompt": "",
-      "duration": 21,
-      "frame_filename": "charles-full-body-back-to-camera.png",
-      "frame_id": "f09",
+      "duration": 14,
+      "frame_filename": "Charles Hoskinson_ full body with a smille facing the camera slitly to the right.png",
+      "frame_id": "f07",
       "audio_filename": "",
       "audio_speaker": "",
       "narration": "",
@@ -67,10 +67,9 @@
       "broll_filename": "",
       "broll_id": "",
       "broll_volume": 0.0,
-      "created": "2026-08-25T18:42:37.130711+00:00",
-      "updated": "2026-09-02T00:03:54.032954+00:00",
-      "scene_number": 2,
-      "audio_duration": 20.832
+      "created": "2026-08-25T18:47:21.498098+00:00",
+      "updated": "2026-09-01T23:14:53.428489+00:00",
+      "scene_number": 2
     },
     {
       "scene_id": "5",
@@ -93,26 +92,6 @@
       "scene_number": 3
     },
     {
-      "scene_id": "8",
-      "prompt": "",
-      "duration": 14,
-      "frame_filename": "Charles Hoskinson_ full body with a smille facing the camera slitly to the right.png",
-      "frame_id": "f07",
-      "audio_filename": "",
-      "audio_speaker": "",
-      "narration": "",
-      "status": "draft",
-      "feedback": "",
-      "prompt_id": null,
-      "video_path": null,
-      "broll_filename": "",
-      "broll_id": "",
-      "broll_volume": 0.0,
-      "created": "2026-08-25T18:47:21.498098+00:00",
-      "updated": "2026-09-01T23:14:53.428489+00:00",
-      "scene_number": 4
-    },
-    {
       "scene_id": "9",
       "prompt": "",
       "duration": 14,
@@ -130,7 +109,28 @@
       "broll_volume": 0.0,
       "created": "2026-08-26T15:38:07.684928+00:00",
       "updated": "2026-09-01T23:15:03.326775+00:00",
-      "scene_number": 5
+      "scene_number": 4
+    },
+    {
+      "scene_id": "1",
+      "prompt": "",
+      "duration": 21,
+      "frame_filename": "frame_james_headshot.png",
+      "frame_id": "f10",
+      "audio_filename": "",
+      "audio_speaker": "",
+      "narration": "",
+      "status": "draft",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "broll_filename": "",
+      "broll_id": "",
+      "broll_volume": 0.0,
+      "created": "2026-08-25T18:42:37.130711+00:00",
+      "updated": "2026-09-05T00:27:37.431452+00:00",
+      "scene_number": 5,
+      "audio_duration": 20.832
     },
     {
       "scene_id": "6",
@@ -293,6 +293,46 @@
       "created": "2026-08-25T18:46:14.533983+00:00",
       "updated": "2026-09-01T23:15:11.205965+00:00",
       "scene_number": 11
+    },
+    {
+      "scene_id": "12",
+      "prompt": "",
+      "duration": 14,
+      "frame_filename": "Charles Hoskinson_waist up headshot_looking straght at the camera_serios expresion no showing theeth no smile.png",
+      "frame_id": "f03",
+      "audio_filename": "",
+      "audio_speaker": "",
+      "narration": "",
+      "status": "draft",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "broll_filename": "",
+      "broll_id": "",
+      "broll_volume": 0.0,
+      "created": "2026-09-05T00:26:21.811176+00:00",
+      "updated": "2026-09-05T00:26:28.023720+00:00",
+      "scene_number": 12
+    },
+    {
+      "scene_id": "13",
+      "prompt": "",
+      "duration": 14,
+      "frame_filename": "charles-full-body-back-to-camera.png",
+      "frame_id": "f09",
+      "audio_filename": "",
+      "audio_speaker": "",
+      "narration": "",
+      "status": "draft",
+      "feedback": "",
+      "prompt_id": null,
+      "video_path": null,
+      "broll_filename": "",
+      "broll_id": "",
+      "broll_volume": 0.0,
+      "created": "2026-09-05T00:26:38.842696+00:00",
+      "updated": "2026-09-05T00:26:43.723896+00:00",
+      "scene_number": 13
     }
   ]
 }
