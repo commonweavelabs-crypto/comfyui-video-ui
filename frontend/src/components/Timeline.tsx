@@ -7,7 +7,6 @@ interface TimelineProps {
   scriptId: string
   onPromptChange: (sceneId: string, prompt: string) => void
   onDurationChange: (sceneId: string, duration: number) => void
-  onRenderOverrideChange: (sceneId: string, field: 'width' | 'height' | 'fps', value: number | null) => void
   onSubmit: (sceneId: string) => void
   onDelete: (sceneId: string) => void
   onInsert: (afterSceneId: string | null) => void
@@ -33,7 +32,6 @@ export default function Timeline({
   scriptId,
   onPromptChange,
   onDurationChange,
-  onRenderOverrideChange,
   onSubmit,
   onDelete,
   onInsert,
@@ -422,7 +420,6 @@ export default function Timeline({
               scriptId={scriptId}
               onPromptChange={onPromptChange}
               onDurationChange={onDurationChange}
-              onRenderOverrideChange={onRenderOverrideChange}
               onSubmit={onSubmit}
               onDelete={onDelete}
               onFrameUpload={onFrameUpload}

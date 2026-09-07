@@ -95,6 +95,40 @@ async def patch_script(script_id: str, body: ScriptUpdate):
     return updated
 
 
+# ── Project render settings (resolution + FPS are PROJECT-level, Gui 2026-09-07) ──
+
+class RenderSettingsBody(BaseModel):
+    preset: str  # key from PLATFORM_PRESETS
+    width: int | None = None   # only for preset=custom
+    height: int | None = None
+    fps: int | None = None
+
+
+@router.get("/{script_id}/render-settings")
+async def get_render_settings(script_id: str):
+    """Effective render geometry for the project (project preset > template)."""
+    if not store.get_script(script_id):
+        raise HTTPException(404, "Script not found")
+    return {
+        "presets": store.PLATFORM_PRESETS,
+        "current": store.get_project_render_settings(script_id),
+    }
+
+
+@router.put("/{script_id}/render-settings")
+async def set_render_settings(script_id: str, body: RenderSettingsBody):
+    """Set the project's resolution + FPS from a platform preset (or custom)."""
+    updated = store.set_project_render_settings(
+        script_id, body.preset, body.width, body.height, body.fps,
+    )
+    if updated is None:
+        raise HTTPException(404, "Script not found or unknown preset")
+    return {
+        "render_settings": updated.get("render_settings"),
+        "current": store.get_project_render_settings(script_id),
+    }
+
+
 @router.delete("/{script_id}")
 async def delete_script(script_id: str):
     """Delete a script and all associated files (sent to Recycle Bin)."""

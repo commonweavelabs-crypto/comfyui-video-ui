@@ -310,7 +310,35 @@ export const comfyuiApi = {
     ),
 }
 
-// ─── Frame Catalog ──────────────────────────────────────────
+// ─── Project render settings (resolution + FPS are project-level) ───────────
+
+export const renderSettingsApi = {
+  get: (scriptId: string) =>
+    request<{
+      presets: Record<string, {
+        label: string
+        width: number | null
+        height: number | null
+        fps: number | null
+        note: string
+      }>
+      current: { preset: string; width: number; height: number; fps: number; source: string }
+    }>(`/scripts/${scriptId}/render-settings`),
+
+  set: (
+    scriptId: string,
+    body: { preset: string; width?: number; height?: number; fps?: number },
+  ) =>
+    request<{
+      render_settings: { preset: string; width: number | null; height: number | null; fps: number | null }
+      current: { preset: string; width: number; height: number; fps: number; source: string }
+    }>(`/scripts/${scriptId}/render-settings`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+}
+
+// ─── Frames Catalog ──────────────────────────────────────────
 
 export const framesApi = {
   list: async () => {

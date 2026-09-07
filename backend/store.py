@@ -81,6 +81,82 @@ def get_script_content(script_id: str) -> str | None:
     return path.read_text(encoding="utf-8")
 
 
+# Platform resolution presets (Gui, 2026-09-07): resolution + FPS are PROJECT-level
+# settings, not per-scene. Mixed aspect ratios / frame rates within one video are
+# wrong. Presets are labeled by destination so users pick the right one for where
+# the video is going.
+PLATFORM_PRESETS: dict[str, dict] = {
+    "youtube_1080p":  {"label": "YouTube 1080p",        "width": 1920, "height": 1080, "fps": 24, "note": "Standard YouTube horizontal"},
+    "youtube_4k":     {"label": "YouTube 4K",           "width": 3840, "height": 2160, "fps": 24, "note": "High-res horizontal — very heavy render"},
+    "reels_tiktok":   {"label": "Instagram Reels / TikTok", "width": 1080, "height": 1920, "fps": 30, "note": "Vertical short-form (9:16)"},
+    "instagram_feed": {"label": "Instagram Feed",       "width": 1080, "height": 1350, "fps": 30, "note": "IG portrait feed post (4:5)"},
+    "square":         {"label": "Square 1:1",           "width": 1080, "height": 1080, "fps": 30, "note": "Feed-neutral, works everywhere"},
+    "custom":         {"label": "Custom",               "width": None, "height": None, "fps": None, "note": "Manual size + FPS"},
+}
+
+
+def get_project_render_settings(script_id: str) -> dict:
+    """Effective render geometry for a project: project settings > template slots.
+
+    Returns {width, height, fps, preset, source} where source explains which
+    layer won (project preset / template default).
+    """
+    entry = get_script(script_id) or {}
+    rs = entry.get("render_settings") or {}
+
+    def _resolve(field: str, default: int) -> tuple[int, str]:
+        v = rs.get(field)
+        if isinstance(v, int) and v > 0:
+            return v, "project"
+        # fall back to the workflow template slot values
+        try:
+            workflow = _load_workflow_public()
+            node = {"width": "340:330", "height": "340:324", "fps": "340:323"}[field]
+            return int(workflow[node]["inputs"].get("value", default)), "template"
+        except Exception:
+            return default, "builtin"
+
+    width, wsrc = _resolve("width", 1600)
+    height, _ = _resolve("height", 900)
+    fps, _ = _resolve("fps", 24)
+    return {
+        "width": width, "height": height, "fps": fps,
+        "preset": rs.get("preset", "custom" if rs else "template"),
+        "source": wsrc,
+    }
+
+
+def _load_workflow_public() -> dict:
+    return _load_workflow()
+
+
+def set_project_render_settings(script_id: str, preset: str,
+                                width: int | None = None, height: int | None = None,
+                                fps: int | None = None) -> dict | None:
+    """Set project-level render geometry. For 'custom', width/height/fps are used
+    directly; for named presets the preset values fill any gaps."""
+    preset_info = PLATFORM_PRESETS.get(preset)
+    if preset_info is None:
+        return None
+    resolved_w = width if (preset == "custom" and width) else (preset_info["width"] or width)
+    resolved_h = height if (preset == "custom" and height) else (preset_info["height"] or height)
+    resolved_fps = fps if (preset == "custom" and fps) else (preset_info["fps"] or fps)
+
+    catalog = load_catalog()
+    for s in catalog.get("scripts", []):
+        if s.get("script_id") == script_id:
+            s["render_settings"] = {
+                "preset": preset,
+                "width": int(resolved_w) if resolved_w else None,
+                "height": int(resolved_h) if resolved_h else None,
+                "fps": int(resolved_fps) if resolved_fps else None,
+            }
+            s["updated"] = _now()
+            save_catalog(catalog)
+            return s
+    return None
+
+
 def create_script(title: str, content: str, tags: list[str] | None = None) -> dict:
     script_id = f"{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8]}"
     entry = {

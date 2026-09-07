@@ -464,7 +464,7 @@ export default function WorkflowWizard({
           {/* Step 4: Render */}
           {step === 4 && (
             <div className="space-y-3">
-              <SlotsPanel />
+              <SlotsPanel scriptId={script?.id} />
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm text-zinc-400">
                   Submit scenes to ComfyUI for rendering.

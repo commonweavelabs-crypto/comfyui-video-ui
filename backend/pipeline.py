@@ -234,18 +234,20 @@ async def submit_scene_to_comfyui(scene: dict, script_id: str) -> dict:
     # Apply all fixes from submit-scenes.py
     payload["340:331"]["inputs"]["value"] = duration      # actual duration
 
-    # Per-scene render overrides (roadmap #4): scene values win when set;
-    # otherwise the template slot defaults (SlotsPanel-editable) apply.
-    fps = int(scene.get("fps") or workflow["340:323"]["inputs"].get("value", 24))
-    width = int(scene.get("width") or workflow["340:330"]["inputs"].get("value", 1600))
-    height = int(scene.get("height") or workflow["340:324"]["inputs"].get("value", 900))
+    # Render geometry: PROJECT settings (Gui 2026-09-07 — resolution/FPS are
+    # project-level, never per-scene). project preset >> template slot.
+    import store as _store
+    proj = _store.get_project_render_settings(script_id)
+    fps = int(proj["fps"])
+    width = int(proj["width"])
+    height = int(proj["height"])
     frame_count = int(duration * fps)
 
-    payload["340:323"]["inputs"]["value"] = fps            # fps (scene override or template)
+    payload["340:323"]["inputs"]["value"] = fps            # fps (project or template)
     if "340:330" in payload and "inputs" in payload["340:330"]:
-        payload["340:330"]["inputs"]["value"] = width      # width (scene override or template)
+        payload["340:330"]["inputs"]["value"] = width      # width (project or template)
     if "340:324" in payload and "inputs" in payload["340:324"]:
-        payload["340:324"]["inputs"]["value"] = height     # height (scene override or template)
+        payload["340:324"]["inputs"]["value"] = height     # height (project or template)
     if "340:316" in payload and "inputs" in payload["340:316"]:
         payload["340:316"]["inputs"]["temporal_size"] = 2048  # prevent OOM
 
