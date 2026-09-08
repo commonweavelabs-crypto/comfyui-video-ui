@@ -275,6 +275,17 @@ Not every model is Shakespeare or James Cameron! Also surface proactively:
 prompt-richness with fun tips as users learn the app (onboarding tips, empty
 states, tooltip copy).
 
+**Capability matrix (real runs, DESKTOP-SHN3HMJ, 2026-09-08):**
+| Model | Params | Idea→scenes | Intent guard | Full screenplay ~19K | Tier |
+|---|---|---|---|---|---|
+| qwen3:0.6b | 0.6B | ✅ | ✅ | ❌ guard misfire + infinite 77K-token gen loop | Floor (ideas/notes only, 20K hard cap) |
+| gemma3:12b | 12B | ✅ | ✅ | ✅ 8 scenes, faithful dialogue, condenses 19K→10K | **RECOMMENDED (local)** |
+Candidates to test: qwen3 4B class (expected middle tier), cloud flagships.
+Per-model disclaimers + job locks come from this table. Chunked map-reduce
+(split at INT./EXT. boundaries → per-chunk LLM → reduce pass) is the designed
+upgrade for mid-tier models — build only after a single full pass works, per
+model tier.
+
 Roadmap add: **the AI Manual** — a maintained document (like context_pack.md)
 describing every screen, action, and workflow of the app in model-readable
 form. It powers roles 2/3/4 and must be versioned alongside UI changes
