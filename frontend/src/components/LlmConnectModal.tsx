@@ -75,10 +75,15 @@ export default function LlmConnectModal({ onClose, onConnected, originalError }:
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-base font-semibold text-zinc-100">Connect an AI model</h2>
+            <h2 className="text-base font-semibold text-zinc-100">
+              {originalError && originalError.startsWith('This text is')
+                ? 'This job needs a more capable model'
+                : 'Connect an AI model'}
+            </h2>
             <p className="text-xs text-zinc-500 mt-1">
-              The app uses an LLM to turn your idea into scenes. Connect any local
-              model server or cloud provider — no account needed for local.
+              {originalError && originalError.startsWith('This text is')
+                ? 'Your connected model handled this like a small model would. Pick a more capable one below — bigger models handle longer, tougher jobs. Or keep your model and try a shorter idea; both are good paths.'
+                : 'The app uses an LLM to turn your idea into scenes. Connect any local model server or cloud provider — no account needed for local.'}
             </p>
           </div>
           <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 text-lg leading-none px-1">×</button>

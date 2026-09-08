@@ -79,6 +79,14 @@ export default function Landing({
           setShowLlmConnect(true)
           return
         }
+        if (res.status === 413) {
+          // Input too big for the connected model -> same "always provide a way
+          // out" philosophy: open the model picker so they can switch to a more
+          // capable model (or shorten the text). Gui 2026-09-08.
+          setLlmError(detail.detail || 'Too much text for the connected model')
+          setShowLlmConnect(true)
+          return
+        }
         throw new Error(detail.detail || 'The LLM could not be reached')
       }
       const data = await res.json()
