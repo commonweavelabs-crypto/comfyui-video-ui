@@ -47,7 +47,14 @@ interface WSQueueStatus {
   running: number
   pending: number
 }
-type WSMessage = WSSceneUpdate | WSPipelineProgress | WSAudioProgress | WSConnected | WSPong | WSQueueStatus
+interface WSFormatProgress {
+  type: 'format_progress'
+  stage: 'chunking' | 'formatting' | 'done'
+  current: number
+  total: number
+  message: string
+}
+type WSMessage = WSSceneUpdate | WSPipelineProgress | WSAudioProgress | WSConnected | WSPong | WSQueueStatus | WSFormatProgress
 
 export default function App() {
   // ─── State ──────────────────────────────────────────────────
@@ -167,6 +174,11 @@ export default function App() {
               break
             }
             case 'pong':
+              break
+            case 'format_progress':
+              // Landing listens for chunked-format progress via window event
+              // (reuses this persistent socket instead of a second connection).
+              window.dispatchEvent(new CustomEvent('format_progress', { detail: msg }))
               break
             case 'queue_status': {
               const { running, pending } = msg

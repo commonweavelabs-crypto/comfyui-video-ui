@@ -75,29 +75,17 @@ export default function Landing({
         return
       }
       // Otherwise: full LLM formatting (needs API key configured).
-      // Ephemeral WS listener: chunk progress from the backend (M-E progress bar).
-      const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-      const wsPortFmt = window.location.port === '8502' ? '8503' : window.location.port
-      const fmtWs = new WebSocket(`${wsProto}//${window.location.hostname}:${wsPortFmt}/ws`)
-      let fmtActive = true
-      fmtWs.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data)
-          if (msg.type === 'format_progress' && fmtActive) {
-            setFormatProgress({ current: msg.current, total: msg.total, message: msg.message })
-          }
-        } catch { /* ignore non-JSON */ }
+      // Progress comes through App's persistent WS socket, re-dispatched here as
+      // a window CustomEvent (a second socket raced the handshake and missed
+      // early broadcasts).
+      const onFmtProgress = (ev: Event) => {
+        const detail = (ev as CustomEvent).detail
+        if (detail?.type === 'format_progress') {
+          setFormatProgress({ current: detail.current, total: detail.total, message: detail.message })
+        }
       }
-      // Wait for the socket to actually open before firing the request —
-      // otherwise the backend's first chunk broadcasts arrive before the
-      // handshake and the progress bar never appears.
-      await new Promise<void>((resolve) => {
-        if (fmtWs.readyState === WebSocket.OPEN) return resolve()
-        const done = () => resolve()
-        fmtWs.onopen = done
-        setTimeout(done, 1500) // never block the job on a slow socket
-      })
-      closeFmtWs = () => { fmtActive = false; try { fmtWs.close() } catch { /* */ } }
+      window.addEventListener('format_progress', onFmtProgress)
+      closeFmtWs = () => window.removeEventListener('format_progress', onFmtProgress)
 
       try {
         const res = await fetch('/api/writing/format', {
