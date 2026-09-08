@@ -150,7 +150,10 @@ Output ONLY the fountain text."""
 
 
 def _split_scenes(text: str) -> list[str]:
-    """Split at scene headings so no chunk ever breaks mid-scene."""
+    """Split at scene headings so no chunk ever breaks mid-scene.
+    Tolerates markdown bold (Gui pastes Obsidian files: **INT. ...**) and
+    em-dashes in headings."""
+    text = text.replace("**", "")
     parts = re.split(r"(?m)^(?=INT\.|EXT\.)", text)
     return [p.strip() for p in parts if p.strip()]
 

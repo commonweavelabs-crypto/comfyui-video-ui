@@ -50,8 +50,11 @@ export default function Landing({
       // a few headings got misrouted to the parser, bypassing the LLM entirely
       // (found live: the Lighthouse story test, 2026-09-08).
       const t = prompt.trim()
+      const firstLine = t.split('\n')[0].trim()
+      const hasEarlyHeading = t.split('\n').slice(0, 20).some((l) => /^(INT\.|EXT\.)/.test(l.trim()))
       const looksLikeScript =
-        /^(INT\.|EXT\.)/.test(t) || /^[A-Z][A-Z '.\-]{2,60}$/.test(t.split('\n')[0])
+        /^(INT\.|EXT\.)/.test(t) ||
+        (/^[A-Z][A-Z '.\-]{2,60}$/.test(firstLine) && hasEarlyHeading)
       if (looksLikeScript) {
         const res = await fetch('/api/writing/scripts', {
           method: 'POST',
@@ -85,7 +88,15 @@ export default function Landing({
           }
         } catch { /* ignore non-JSON */ }
       }
-      fmtWs.onopen = () => { /* connected; backend broadcasts will arrive */ }
+      // Wait for the socket to actually open before firing the request —
+      // otherwise the backend's first chunk broadcasts arrive before the
+      // handshake and the progress bar never appears.
+      await new Promise<void>((resolve) => {
+        if (fmtWs.readyState === WebSocket.OPEN) return resolve()
+        const done = () => resolve()
+        fmtWs.onopen = done
+        setTimeout(done, 1500) // never block the job on a slow socket
+      })
       closeFmtWs = () => { fmtActive = false; try { fmtWs.close() } catch { /* */ } }
 
       try {
@@ -195,13 +206,23 @@ export default function Landing({
             <div className="text-[11px] text-zinc-600 pl-2">
               {prompt ? `${prompt.trim().length} characters` : 'Drop a file, paste a script, or just an idea'}
             </div>
-            <button
-              onClick={handleFormat}
-              disabled={!prompt.trim() || formatting}
-              className="px-5 py-2 bg-brand-600 hover:bg-brand-500 active:bg-brand-600 disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-all tracking-[0.3px]"
-            >
-              {formatting ? 'Formatting...' : 'Write Script'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setLlmError(null); setShowLlmConnect(true) }}
+                disabled={formatting}
+                title="Pick a different model or provider"
+                className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium rounded-xl transition-all"
+              >
+                Model
+              </button>
+              <button
+                onClick={handleFormat}
+                disabled={!prompt.trim() || formatting}
+                className="px-5 py-2 bg-brand-600 hover:bg-brand-500 active:bg-brand-600 disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-all tracking-[0.3px]"
+              >
+                {formatting ? 'Formatting...' : 'Write Script'}
+              </button>
+            </div>
           </div>
         </div>
         {formatError && (
@@ -226,8 +247,9 @@ export default function Landing({
           </div>
           <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
             You're using a local small model, so your text is being processed in
-            sequential scene chunks — that's why this takes a bit. More capable
-            or cloud models format large scripts in one pass, faster.
+            sequential scene chunks — that's why this takes a bit. Switching to a
+            more capable or cloud model would allow formatting large scripts in
+            one pass, faster — click the Model button to see what's available!
           </p>
         </div>
       )}
