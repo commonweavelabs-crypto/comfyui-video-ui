@@ -13,3 +13,4 @@ data/feedback/
 data/render_stats.json
 
 .megamemory/
+data/llm_config.json
