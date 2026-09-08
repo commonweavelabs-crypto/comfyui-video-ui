@@ -1,0 +1,1 @@
+{"ts": "2026-09-08T01:52:06.926894+00:00", "source": "format", "model": "qwen3:0.6b", "elapsed_s": 0.75, "prompt": "hi", "response": "{\"title\": \"Need your idea\", \"script\": \"Tell me your movie idea — a premise, a scene, or a whole story — and I'll format it for the video pipeline.\"}", "error": ""}

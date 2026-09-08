@@ -16,6 +16,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 import script_store
+import llm_adapter
+from config import PROJECT_ROOT
 from context_pack import get_context_pack
 from fountain_parser import parse_fountain
 from llm_adapter import chat_completion
@@ -100,12 +102,41 @@ def _merge_character_manifest(parsed: dict, manifest: list[dict]) -> None:
                 c["type"] = "narrator"
 
 
+def _log_llm_request(source: str, prompt: str, response: dict | str | None, error: str | None = None, elapsed_s: float = 0.0) -> None:
+    """Append a request log line to data/llm_logs/YYYY-MM-DD.jsonl (testing aid:
+    lets us see exactly what the user asked and what the model replied)."""
+    from datetime import datetime, timezone
+    try:
+        log_dir = PROJECT_ROOT / "data" / "llm_logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "source": source,
+            "model": llm_adapter._load_llm_config().get("ollama_model") or llm_adapter._load_llm_config().get("model"),
+            "elapsed_s": round(elapsed_s, 2),
+            "prompt": (prompt or "")[:2000],
+            "response": (json.dumps(response, ensure_ascii=False)[:3000] if response else None),
+            "error": (error or "")[:500],
+        }
+        with open(log_dir / f"{datetime.now(timezone.utc).date()}.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except OSError:
+        pass  # logging must never break the pipeline
+
+
 @router.post("/format")
 async def format_script(body: FormatBody):
     """Format an idea/prompt into a structured script via the LLM (no save)."""
-    data = await _format_with_llm(body.prompt)
+    import time
+    t0 = time.monotonic()
+    try:
+        data = await _format_with_llm(body.prompt)
+    except HTTPException as e:
+        _log_llm_request("format", body.prompt, None, error=e.detail, elapsed_s=time.monotonic() - t0)
+        raise
     parsed = parse_fountain(data["script"])
     _merge_character_manifest(parsed, data.get("characters", []))
+    _log_llm_request("format", body.prompt, {"title": data.get("title"), "script": data["script"]}, elapsed_s=time.monotonic() - t0)
     return {
         "title": data.get("title", "Untitled"),
         "raw_text": data["script"],
