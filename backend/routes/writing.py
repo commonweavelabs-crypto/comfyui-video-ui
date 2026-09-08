@@ -135,7 +135,11 @@ def _log_llm_request(source: str, prompt: str, response: dict | str | None, erro
 # ── Chunked formatting for small local models (2026-09-08 experiment) ──────
 # Fidelity cliff measured on qwen3:0.6b: 10K chunks → 8-39% garbled, 5K → 43-103%
 # word-mangling, 3K → 89% line fidelity. Split at scene boundaries, never mid-scene.
-CHUNK_THRESHOLD = 6_000   # above this, small local models get the chunked path
+# Measured on qwen3:0.6b (2026-09-08): fidelity cliff — 10K chunks → 8-39% garbled,
+# 5K → 43-103%, 3K → 89% line fidelity (2K tested the same 89%, just slower — the
+# residual ~10% noise is the model's baseline, not size-driven). 3K chunks, and
+# chunking kicks in at 6K (single-pass compression starts before that).
+CHUNK_THRESHOLD = 6_000
 CHUNK_SIZE = 3_000
 
 _CHUNK_MAP_SYSTEM = """You are a faithful formatter. Rewrite this screenplay fragment in clean Fountain format.
@@ -207,10 +211,14 @@ async def format_script(body: FormatBody):
     """Format an idea/prompt into a structured script via the LLM (no save)."""
     import time
     t0 = time.monotonic()
-    # Small local models get the chunked path for big inputs (measured fidelity
-    # cliff: 3K scene-boundary chunks = 89% vs 10K = 8-39% garbled). Cloud models
-    # keep the single-pass limit with guidance.
-    if len(body.prompt) > MAX_LLM_PROMPT_CHARS:
+    # Small local models get the chunked path EARLY (threshold 6K, well before the
+    # 20K hard cap): measured fidelity cliff means single-pass compression starts
+    # degrading long before 20K on a 0.6B — chunked = 89% vs single = skeleton.
+    # Cloud models keep the single-pass limit with guidance.
+    if len(body.prompt) > MAX_LLM_PROMPT_CHARS or (
+        _is_small_local_model(llm_adapter._load_llm_config())
+        and len(body.prompt) > CHUNK_THRESHOLD
+    ):
         if _is_small_local_model(llm_adapter._load_llm_config()):
             data = await _format_chunked(body.prompt)
             parsed = parse_fountain(data["script"])
