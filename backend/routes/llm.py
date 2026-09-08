@@ -6,6 +6,7 @@ every provider below speaks plain /v1/chat/completions or /api/chat.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -46,7 +47,7 @@ async def _probe_local(client: httpx.AsyncClient, url: str) -> list[dict]:
         ]),
     ):
         try:
-            resp = await client.get(url + path, timeout=2.5)
+            resp = await client.get(url + path, timeout=1.0)
             if resp.status_code == 200:
                 models = pick(resp.json())
                 if models:
@@ -58,27 +59,33 @@ async def _probe_local(client: httpx.AsyncClient, url: str) -> list[dict]:
 
 @router.get("/providers")
 async def list_providers():
-    """Detect available LLM providers + their models for the connect screen."""
+    """Detect available LLM providers + their models for the connect screen.
+
+    Probes run in PARALLEL — serial probes made the modal hang ~13s when three
+    of four local servers were unreachable (each waited out its 2.5s timeout).
+    """
     providers: list[dict] = []
     async with httpx.AsyncClient() as client:
-        for probe in _LOCAL_PROBES:
-            models = await _probe_local(client, probe["url"])
-            if models:
-                providers.append({
-                    "id": probe["id"],
-                    "label": probe["label"],
-                    "kind": "local",
-                    "url": probe["url"],
-                    "models": models,
-                })
-        for cloud in _CLOUD_ENV_KEYS:
-            if os.environ.get(cloud["env"]):
-                providers.append({
-                    "id": cloud["id"],
-                    "label": cloud["label"],
-                    "kind": "cloud",
-                    "models": [{"id": cloud["model"], "label": cloud["model"]}],
-                })
+        local_results = await asyncio.gather(
+            *(_probe_local(client, probe["url"]) for probe in _LOCAL_PROBES)
+        )
+    for probe, models in zip(_LOCAL_PROBES, local_results):
+        if models:
+            providers.append({
+                "id": probe["id"],
+                "label": probe["label"],
+                "kind": "local",
+                "url": probe["url"],
+                "models": models,
+            })
+    for cloud in _CLOUD_ENV_KEYS:
+        if os.environ.get(cloud["env"]):
+            providers.append({
+                "id": cloud["id"],
+                "label": cloud["label"],
+                "kind": "cloud",
+                "models": [{"id": cloud["model"], "label": cloud["model"]}],
+            })
     current = _current_summary()
     return {"providers": providers, "current": current}
 

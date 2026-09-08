@@ -1,112 +1,85 @@
 {
-  "scripts": [
-    {
-      "script_id": "20260822-e5fbe81f",
-      "title": "test2",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-08-22T23:25:35.840707+00:00",
-      "updated": "2026-09-07T22:37:55.191317+00:00",
-      "scene_count": 12,
-      "render_settings": {
-        "preset": "template",
-        "width": 1600,
-        "height": 900,
-        "fps": 30
-      }
-    },
-    {
-      "script_id": "20260822-b8bed75e",
-      "title": "enrich test",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-08-22T23:26:05.560541+00:00",
-      "updated": "2026-08-26T17:17:40.777153+00:00",
-      "scene_count": 3
-    },
-    {
-      "script_id": "20260822-ad852130",
-      "title": "fresh test",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-08-22T23:26:33.969174+00:00",
-      "updated": "2026-09-07T21:37:02.483983+00:00",
-      "scene_count": 1
-    },
-    {
-      "script_id": "20260822-06488111",
-      "title": "fresh enrich test",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-08-22T23:33:28.188748+00:00",
-      "updated": "2026-08-22T23:33:28.605752+00:00",
-      "scene_count": 1
-    },
-    {
-      "script_id": "20260822-dcc8ed1d",
-      "title": "poll test",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-08-22T23:34:15.618435+00:00",
-      "updated": "2026-08-24T00:41:33.659671+00:00",
-      "scene_count": 2
-    },
-    {
-      "script_id": "20260901-51009489",
-      "title": "Manual Test Project",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-09-02T02:05:41.762399+00:00",
-      "updated": "2026-09-02T02:05:41.762399+00:00",
-      "scene_count": 0
-    },
-    {
-      "script_id": "20260907-12ea3b99",
-      "title": "Slots Demo",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-09-07T19:42:34.721969+00:00",
-      "updated": "2026-09-07T19:42:34.721969+00:00",
-      "scene_count": 0
-    },
-    {
-      "script_id": "20260907-e8dc26cf",
-      "title": "amara",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-09-07T20:32:31.528527+00:00",
-      "updated": "2026-09-07T20:32:31.528527+00:00",
-      "scene_count": 0
-    },
-    {
-      "script_id": "20260907-15eff410",
-      "title": "hi",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-09-07T21:30:29.719910+00:00",
-      "updated": "2026-09-07T21:30:29.719910+00:00",
-      "scene_count": 0
-    },
-    {
-      "script_id": "20260907-a48d254b",
-      "title": "hi",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-09-07T21:30:50.242835+00:00",
-      "updated": "2026-09-07T21:30:50.242835+00:00",
-      "scene_count": 0
-    },
-    {
-      "script_id": "20260907-6cbe39e4",
-      "title": "hi",
-      "tags": [],
-      "status": "draft",
-      "created": "2026-09-07T21:37:57.680686+00:00",
-      "updated": "2026-09-07T21:37:57.680686+00:00",
-      "scene_count": 0
-    }
-  ],
-  "scenes": {},
-  "frames": [],
-  "music": []
+ "scripts": [
+  {
+   "script_id": "20260822-e5fbe81f",
+   "title": "test2",
+   "tags": [],
+   "status": "draft",
+   "created": "2026-08-22T23:25:35.840707+00:00",
+   "updated": "2026-09-07T22:37:55.191317+00:00",
+   "scene_count": 12,
+   "render_settings": {
+    "preset": "template",
+    "width": 1600,
+    "height": 900,
+    "fps": 30
+   }
+  },
+  {
+   "script_id": "20260822-b8bed75e",
+   "title": "enrich test",
+   "tags": [],
+   "status": "draft",
+   "created": "2026-08-22T23:26:05.560541+00:00",
+   "updated": "2026-08-26T17:17:40.777153+00:00",
+   "scene_count": 3
+  },
+  {
+   "script_id": "20260822-ad852130",
+   "title": "fresh test",
+   "tags": [],
+   "status": "draft",
+   "created": "2026-08-22T23:26:33.969174+00:00",
+   "updated": "2026-09-07T21:37:02.483983+00:00",
+   "scene_count": 1
+  },
+  {
+   "script_id": "20260822-06488111",
+   "title": "fresh enrich test",
+   "tags": [],
+   "status": "draft",
+   "created": "2026-08-22T23:33:28.188748+00:00",
+   "updated": "2026-08-22T23:33:28.605752+00:00",
+   "scene_count": 1
+  },
+  {
+   "script_id": "20260822-dcc8ed1d",
+   "title": "poll test",
+   "tags": [],
+   "status": "draft",
+   "created": "2026-08-22T23:34:15.618435+00:00",
+   "updated": "2026-08-24T00:41:33.659671+00:00",
+   "scene_count": 2
+  },
+  {
+   "script_id": "20260901-51009489",
+   "title": "Manual Test Project",
+   "tags": [],
+   "status": "draft",
+   "created": "2026-09-02T02:05:41.762399+00:00",
+   "updated": "2026-09-02T02:05:41.762399+00:00",
+   "scene_count": 0
+  },
+  {
+   "script_id": "20260907-12ea3b99",
+   "title": "Slots Demo",
+   "tags": [],
+   "status": "draft",
+   "created": "2026-09-07T19:42:34.721969+00:00",
+   "updated": "2026-09-07T19:42:34.721969+00:00",
+   "scene_count": 0
+  },
+  {
+   "script_id": "20260907-e8dc26cf",
+   "title": "amara",
+   "tags": [],
+   "status": "draft",
+   "created": "2026-09-07T20:32:31.528527+00:00",
+   "updated": "2026-09-07T20:32:31.528527+00:00",
+   "scene_count": 0
+  }
+ ],
+ "scenes": {},
+ "frames": [],
+ "music": []
 }

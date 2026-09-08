@@ -21,9 +21,16 @@ import type {
 
 const BASE = '/api'
 
+// Endpoints that legitimately run long (LLM formatting on a cold local model can
+// take 60s+; ComfyUI renders take minutes). Everything else keeps a short timeout.
+const LONG_PATHS = ['/writing/format', '/writing/scripts', '/pipeline', '/comfyui/submit', '/llm/status']
+const DEFAULT_TIMEOUT_MS = 15000
+const LONG_TIMEOUT_MS = 600_000
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 15000)
+  const isLong = LONG_PATHS.some((p) => path.startsWith(p))
+  const timeout = setTimeout(() => controller.abort(), isLong ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
   try {
     const res = await fetch(`${BASE}${path}`, {
       signal: controller.signal,
