@@ -1,94 +1,102 @@
-// Rotating landing headline — the director's voice cycles through inviting
-// lines (Gui 2026-09-08: "always inviting the user, always being friendly").
+// Rotating landing headline - the director's voice cycles through inviting
+// lines (Gui 2026-09-08). Typewriter: types in, holds, DELETES letter by
+// letter, then types the next line.
 //
-// Animation: typewriter effect — letters appear one by one with a blinking
-// terminal caret (Gui: "as if the letters are being typed"). Each line holds
-// for a few seconds after typing completes, then the next line types out.
-//
-// Layout stability (Gui: "the text underneath must not move"): the h1 is
-// CSS-grid stacked — all lines render invisibly in the same grid cell so the
-// container always sizes to the LONGEST line; only the active line is visible.
-// Zero layout shift on rotation, no matter the line lengths.
-//
-// Pauses while the user is typing (parent passes `paused` from composer state).
+// Layout stability + centering: the container's width is measured ONCE from
+// the longest line (off-screen measurer) and pinned in px, so NOTHING below
+// ever moves. Lines are centered inside that fixed width.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 const HEADLINES = [
-  "Let's write your next movie idea",
+  "Let\'s write your next movie idea",
   'The more detail you give me, the better the movie',
-  'Every great film starts with one scene — got one?',
-  "Pitch me anything — I'll make it cinematic",
+  'Every great film starts with one scene \u2014 got one?',
+  "Pitch me anything \u2014 I\'ll make it cinematic",
   'What are we shooting today?',
   'Your idea + my camera = magic',
   'Got a story stuck in your head? Let it out',
-  'From spark to screenplay — right here',
-  "I'm your director. Give me what you got",
+  'From spark to screenplay \u2014 right here',
+  "I\'m your director. Give me what you got",
   'Action! What story are we telling?',
 ]
 
-const TYPE_MS = 28          // per-character speed (fast, lively)
-const HOLD_MS = 3500        // how long a fully-typed line stays
-const BLINK_MS = 530        // caret blink cadence (classic terminal ~530ms)
+const TYPE_MS = 28
+const DELETE_MS = 14
+const HOLD_MS = 5000
+const BLINK_MS = 530
+
+type Phase = 'typing' | 'holding' | 'deleting'
 
 export default function RotatingHeadline({ paused = false }: { paused?: boolean }) {
   const [index, setIndex] = useState(0)
-  const [typed, setTyped] = useState(0)
+  const [count, setCount] = useState(0)
+  const [phase, setPhase] = useState<Phase>('typing')
   const [caretOn, setCaretOn] = useState(true)
+  const [fixedW, setFixedW] = useState<number | null>(null)
+  const measurerRef = useRef<HTMLSpanElement>(null)
 
-  // Typing progress for the current line
-  useEffect(() => {
-    setTyped(0)
-    if (paused) return
-    const line = HEADLINES[index]
-    const t = setInterval(() => {
-      setTyped((n) => {
-        if (n >= line.length) {
-          clearInterval(t)
-          return n
-        }
-        return n + 1
-      })
-    }, TYPE_MS)
-    return () => clearInterval(t)
-  }, [index, paused])
+  // Measure the longest line once with the same font, pin container width
+  useLayoutEffect(() => {
+    if (fixedW != null) return
+    const el = measurerRef.current
+    if (!el) return
+    const widths = HEADLINES.map((h) => {
+      el.textContent = h
+      return el.getBoundingClientRect().width
+    })
+    setFixedW(Math.ceil(Math.max(...widths)) + 6) // +6: caret width + margin, so a full line + caret never wraps
+  }, [fixedW])
 
-  // Advance to the next line after typing completes + hold time
   useEffect(() => {
     if (paused) return
     const line = HEADLINES[index]
-    if (typed < line.length) return
-    const t = setTimeout(() => setIndex((i) => (i + 1) % HEADLINES.length), HOLD_MS)
+    let t: ReturnType<typeof setTimeout>
+    if (phase === 'typing') {
+      if (count < line.length) t = setTimeout(() => setCount((c) => c + 1), TYPE_MS)
+      else setPhase('holding')
+    } else if (phase === 'holding') {
+      t = setTimeout(() => setPhase('deleting'), HOLD_MS)
+    } else {
+      if (count > 0) t = setTimeout(() => setCount((c) => c - 1), DELETE_MS)
+      else {
+        setIndex((i) => (i + 1) % HEADLINES.length)
+        setPhase('typing')
+      }
+    }
     return () => clearTimeout(t)
-  }, [typed, index, paused])
+  }, [phase, count, index, paused])
 
-  // Caret blink
   useEffect(() => {
     const t = setInterval(() => setCaretOn((v) => !v), BLINK_MS)
     return () => clearInterval(t)
   }, [])
 
   const line = HEADLINES[index]
-  const done = typed >= line.length
+  const done = phase !== 'typing'
 
   return (
-    <h1 className="text-3xl font-semibold tracking-tight text-zinc-100 grid" aria-live="polite">
-      {/* Invisible sizers: every line occupies the same grid cell, so the
-          container is sized by the longest line and never shifts. */}
-      {HEADLINES.map((h, i) => (
-        <span key={i} className="invisible col-start-1 row-start-1 whitespace-nowrap" aria-hidden="true">
-          {h}
-        </span>
-      ))}
-      {/* Visible typing line */}
-      <span className="visible col-start-1 row-start-1 whitespace-nowrap" aria-hidden={false}>
-        {line.slice(0, typed)}
-        <span
-          className={`inline-block w-[2px] h-[1em] align-[-0.08em] ml-[2px] bg-emerald-400 ${
-            done && !caretOn ? 'opacity-0' : 'opacity-100'
-          }`}
-        />
-      </span>
+    <h1
+      className="text-3xl font-semibold tracking-tight text-zinc-100 text-center"
+      style={fixedW ? { width: fixedW, marginLeft: 'auto', marginRight: 'auto' } : { minHeight: '1.2em' }}
+      aria-live="polite"
+    >
+      {/* hidden measurer: same font styles as the h1 */}
+      <span
+        ref={measurerRef}
+        className="absolute invisible whitespace-nowrap pointer-events-none"
+        aria-hidden="true"
+      />
+      {fixedW != null ? (
+        <>
+          {line.slice(0, count)}
+          <span
+            className={`inline-block w-[2px] h-[1em] align-[-0.08em] ml-[2px] bg-emerald-400 ${
+              done && !caretOn ? 'opacity-0' : 'opacity-100'
+            }`}
+          />
+        </>
+      ) : null}
     </h1>
   )
 }
