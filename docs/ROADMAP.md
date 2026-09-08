@@ -286,6 +286,19 @@ Per-model disclaimers + job locks come from this table. Chunked map-reduce
 upgrade for mid-tier models — build only after a single full pass works, per
 model tier.
 
+**Chunking experiment (2026-09-08, qwen3:0.6b + Sweet Dreams 28K fountain):**
+fidelity-by-chunk-size is a sharp cliff, not a slope —
+10K chunks → 8–39% (garbled rewrites: "SURETTELLING STEEL", "A BRED NAIL");
+5K chunks → 43–103%, word-mangling begins; 4K → degrading; 3K → **89% avg
+line fidelity, full script through in 27s** (12 chunks, key lines preserved:
+"machines lie by omission", "Good. Keep the noise", "I came here clean",
+"BOTH DOORS ARE THE SAME DOOR"); single scene 1.5K → 95%. CONCLUSION: the
+0.6B CAN pass a full screenplay through map-only chunking at ~3K-char scene-
+boundary chunks — viable fallback for floor-tier models. Build notes: chunk
+at scene headings, never mid-scene; num_predict cap mandatory; map-only
+suffices (no reduce pass needed for format-conversion jobs; reduce only when
+chunks must merge into new content).
+
 Roadmap add: **the AI Manual** — a maintained document (like context_pack.md)
 describing every screen, action, and workflow of the app in model-readable
 form. It powers roles 2/3/4 and must be versioned alongside UI changes
