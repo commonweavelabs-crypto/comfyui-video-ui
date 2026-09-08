@@ -305,6 +305,14 @@ form. It powers roles 2/3/4 and must be versioned alongside UI changes
 (stale manual = confidently wrong AI). Consider generating parts of it from
 the route table automatically.
 
+### M-F2. Script page as a document (paged view) (Gui, 2026-09-08)
+The script view should behave like a writer's document: page numbers, multiple
+pages, add-page (user extends dialogue/scenes page by page — "a whole book"),
+chunked authoring for long works. Ties into the chunked pipeline (each page =
+a natural chunk). Also: strip a leading "Fountain" from LLM-generated titles
+(observed: model announced the format in the title); pass intent-classified
+titles into the chunked path (currently "Untitled").
+
 ### M-G. Monetization (discussion milestone — open questions, 2026-09-08)
 Seed idea (Gui): referral/partner placements in the provider picker — when a
 user needs compute they don't have locally, the model-picker lists cloud
