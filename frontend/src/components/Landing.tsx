@@ -43,9 +43,13 @@ export default function Landing({
     try {
       // If the input already looks like a Fountain script, skip the LLM
       // entirely — parse locally and open the doc view immediately.
+      // A real script STARTS with a scene heading (possibly after a title line).
+      // The old /im test matched INT./EXT. ANYWHERE — so a prose story containing
+      // a few headings got misrouted to the parser, bypassing the LLM entirely
+      // (found live: the Lighthouse story test, 2026-09-08).
       const t = prompt.trim()
       const looksLikeScript =
-        /^(INT\.|EXT\.)/im.test(t) || /^[A-Z][A-Z ']{2,30}$/m.test(t)
+        /^(INT\.|EXT\.)/.test(t) || /^[A-Z][A-Z '.\-]{2,60}$/.test(t.split('\n')[0])
       if (looksLikeScript) {
         const res = await fetch('/api/writing/scripts', {
           method: 'POST',

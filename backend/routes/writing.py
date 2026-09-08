@@ -179,7 +179,23 @@ async def create_script(body: dict):
     parsed = parse_fountain(raw_text)
     _merge_character_manifest(parsed, body.get("characters", []))
     if not title:
-        title = f"Script {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        # Try to name the script from its own first lines: a markdown # heading,
+        # then a bare ALL-CAPS title line, before falling back to a timestamp.
+        title = None
+        for ln in raw_text.strip().splitlines()[:6]:
+            s = ln.strip()
+            if s.startswith("# "):
+                title = s.lstrip("# ").strip()
+                break
+        if not title:
+            for ln in raw_text.strip().splitlines()[:4]:
+                s = ln.strip().lstrip("#").strip()
+                # A plausible title: short, mostly letters, not a scene heading
+                if 3 <= len(s) <= 60 and not s.startswith(("INT.", "EXT.")) and s.upper() == s and any(c.isalpha() for c in s):
+                    title = s.title()  # The Last Lighthouse
+                    break
+        if not title:
+            title = f"Script {datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
     script_id = f"w{uuid.uuid4().hex[:8]}"
     blob = script_store.create_script_version(script_id, title, raw_text, parsed)
