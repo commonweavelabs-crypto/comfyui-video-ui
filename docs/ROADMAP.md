@@ -208,3 +208,34 @@ on scene 1. Plan B if script formatting blocks: submit a ready scene from test2.
 Render timing per GPU/VRAM/resolution/duration/fps/checkpoint → local estimates
 per machine. Community submission strictly opt-in (default OFF, show-what's-sent,
 export before send). Foundation exists: `render_stats.json` logs real timings.
+
+### M-E. LLM onboarding + provider layer (discovered live 2026-09-08, first user test)
+First real test died instantly: "The LLM could not be reached" — default provider
+is a cloud GLM endpoint requiring ZAI_API_KEY which a fresh install won't have.
+Findings + plan:
+- **Adapter already exists** (`llm_adapter.py`, transport-only, providers:
+  openai-compatible | ollama). The gap is ONBOARDING UX, not plumbing.
+- **Benchmarked on this machine (real runs, structured JSON scene breakdown):**
+  - `qwen3:0.6b` (522MB, Apache-2.0): valid JSON, 5 scenes, good shot prompts,
+    durations in range — 1.7s warm / 17s cold. **Surprisingly viable minimum.**
+  - `gemma3:12b`: richer creative output, 5s. Comfortable recommended tier.
+  - Conclusion: script formatting/scene breakdown does NOT need a big model;
+    quality-of-prose scales with size but schema adherence is fine at 0.6B
+    thanks to Ollama's constrained `format:"json"` decoding.
+- **Plan (ordered):**
+  1. Local-first provider fallback: if no API key configured, auto-detect
+     Ollama (127.0.0.1:11434) → LM Studio (1234) → any OpenAI-compatible env,
+     and route formatting there. Zero-config for users who have local models.
+  2. First-run connect screen (replaces dead-end warning): detect installed
+     providers, offer "Use local model (recommended)" one-click + pull the
+     recommended model via `ollama pull` from HF (Apache-2.0, ~500MB-8GB by
+     tier), or paste a cloud API key (OpenRouter/GLM/OpenAI).
+  3. Provider status surfaced in-app (Settings → AI: connected model, latency).
+  4. Ship NO weights in the repo (license hygiene + repo size); auto-download
+     at setup instead. Recommended default: qwen3 4B class (quality/speed sweet
+     spot); 0.6B as absolute floor; 12B+ as "best prose" tier.
+- **No harness needed:** a Hermes/OpenClaw install is never required — the app
+  speaks plain OpenAI-compatible HTTP to whatever the user has. Harness
+  detection can be a later convenience (auto-fill connection from Hermes config).
+- Bundling a 1B model: license-wise possible (Apache/MIT families), but ship
+  via download-on-setup, not in-repo.
