@@ -68,7 +68,14 @@ def _extract_json(text: str) -> dict:
 async def _format_with_llm(prompt: str) -> dict:
     """Call the LLM with the context pack. Returns {title, characters, script}."""
     system = get_context_pack()
-    raw = await chat_completion(system, prompt)
+    try:
+        raw = await chat_completion(system, prompt)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Unreachable/unconfigured LLM -> 502 so the UI opens the connect
+        # modal (M-E) instead of a dead-end 500.
+        raise HTTPException(502, f"The LLM could not be reached: {e}") from e
     try:
         data = _extract_json(raw)
     except json.JSONDecodeError as e:
