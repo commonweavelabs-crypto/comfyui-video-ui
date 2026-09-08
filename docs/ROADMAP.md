@@ -239,3 +239,44 @@ Findings + plan:
   detection can be a later convenience (auto-fill connection from Hermes config).
 - Bundling a 1B model: license-wise possible (Apache/MIT families), but ship
   via download-on-setup, not in-repo.
+
+### M-F. The AI's multiple roles ("the little AI that could") (brainstorm, 2026-09-08)
+One assistant, several roles — each role gets its own context pack (instructions)
+routed through a decision layer. The transport (llm_adapter) and connect flow
+(M-E) already exist; what each role needs is a ROLE PACK + routing.
+
+Role roster (Gui's vision, ordered):
+1. **Director & Screenwriter** (LIVE, v3 pack) — turns ideas into Fountain
+   scripts. The core job.
+2. **UI Navigator / Driver** — answer questions about the app AND act:
+   "open my test2 project", "set the frame rate to 24". Needs (a) a manual
+   of the UI's actions as callable tools, (b) function-calling or a strict
+   JSON action schema, (c) a permission layer (what the AI may touch without
+   asking). This is agentic driving — feasibility depends on model size
+   (0.6B: no; 4B+: maybe; 12B+: likely). Build AFTER M-C ships.
+3. **Teacher** — "how do I do X?" with hints and guided steps instead of
+   doing it for the user. Cheaper than #2 (no actions, just a manual).
+4. **Bug Reporter** — user hits a problem, AI interviews briefly, drafts a
+   structured report (what were you doing, what happened, model + render
+   settings + llm_logs excerpt) and offers "Report this for you?" → posts to
+   an endpoint/GitHub issue. High value, medium effort.
+
+Routing / decision tree: first classification step (intent detect) decides
+which role pack handles the turn: question-about-UI → Navigator/Teacher;
+story idea → Screenwriter; problem-report → Bug Reporter; else → Director.
+The v3 pack's input-intent guard is the seed of this tree.
+
+Capability gating by model (Gui): jobs have MINIMUM MODEL TIERS. If the
+connected model can't do a job (by testing or published benchmarks), show it
+locked with a fun warning, e.g. "This role needs a bigger brain — your model
+is lovely but not quite James Cameron. Switch models for better results."
+Not every model is Shakespeare or James Cameron! Also surface proactively:
+"the more detail you give me about your story, the better the movie" — teach
+prompt-richness with fun tips as users learn the app (onboarding tips, empty
+states, tooltip copy).
+
+Roadmap add: **the AI Manual** — a maintained document (like context_pack.md)
+describing every screen, action, and workflow of the app in model-readable
+form. It powers roles 2/3/4 and must be versioned alongside UI changes
+(stale manual = confidently wrong AI). Consider generating parts of it from
+the route table automatically.
