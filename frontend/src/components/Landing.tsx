@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { scriptsApi, renderSettingsApi } from '../api'
 import type { Script } from '../types'
 import OutputFormatPicker, { type OutputFormatSelection } from './OutputFormatPicker'
+import LlmConnectModal from './LlmConnectModal'
 
 interface LandingProps {
   onBrowseProjects: () => void
@@ -31,6 +32,8 @@ export default function Landing({
   // canvas setup; it sizes every initial frame and is the final render size).
   // Selection lives in the shared OutputFormatPicker; persisted after create.
   const [formatSelection, setFormatSelection] = useState<OutputFormatSelection | null>(null)
+  const [showLlmConnect, setShowLlmConnect] = useState(false)
+  const [llmError, setLlmError] = useState<string | null>(null)
 
   const handleFormat = async () => {
     if (!prompt.trim() || formatting) return
@@ -69,6 +72,12 @@ export default function Landing({
       })
       if (!res.ok) {
         const detail = await res.json().catch(() => ({}))
+        if (res.status === 502 || res.status === 503) {
+          // LLM unreachable -> guided connect flow (M-E) instead of a dead end
+          setLlmError(detail.detail || 'The LLM could not be reached')
+          setShowLlmConnect(true)
+          return
+        }
         throw new Error(detail.detail || 'The LLM could not be reached')
       }
       const data = await res.json()
@@ -206,6 +215,23 @@ export default function Landing({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Guided LLM connect flow (replaces dead-end error) */}
+      {showLlmConnect && (
+        <LlmConnectModal
+          originalError={llmError}
+          onClose={() => {
+            setShowLlmConnect(false)
+            setLlmError(null)
+          }}
+          onConnected={() => {
+            setShowLlmConnect(false)
+            setLlmError(null)
+            // Retry the formatting automatically now that a model is connected
+            void handleFormat()
+          }}
+        />
       )}
     </div>
   )

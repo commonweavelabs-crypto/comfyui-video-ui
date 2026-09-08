@@ -344,6 +344,33 @@ export const renderSettingsApi = {
     }),
 }
 
+// ─── LLM Providers (M-E: connect screen) ─────────────────────
+
+export type LlmProvider = {
+  id: string
+  label: string
+  kind: 'local' | 'cloud'
+  url?: string
+  models: Array<{ id: string; label: string }>
+}
+
+export const llmApi = {
+  listProviders: () =>
+    request<{
+      providers: LlmProvider[]
+      current: { provider: string; model: string; url?: string } | null
+    }>('/llm/providers'),
+
+  connect: (body: { provider_id: string; model: string; base_url?: string; api_key?: string }) =>
+    request<{ ok: boolean; current: { provider: string; model: string } | null }>('/llm/connect', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  status: () =>
+    request<{ connected: boolean; model?: string; reply?: string; reason?: string }>('/llm/status'),
+}
+
 // ─── Frames Catalog ──────────────────────────────────────────
 
 export const framesApi = {
