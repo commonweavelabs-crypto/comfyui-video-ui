@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import uuid
 from datetime import datetime
 
@@ -131,10 +132,98 @@ def _log_llm_request(source: str, prompt: str, response: dict | str | None, erro
         pass  # logging must never break the pipeline
 
 
+# ── Chunked formatting for small local models (2026-09-08 experiment) ──────
+# Fidelity cliff measured on qwen3:0.6b: 10K chunks → 8-39% garbled, 5K → 43-103%
+# word-mangling, 3K → 89% line fidelity. Split at scene boundaries, never mid-scene.
+CHUNK_THRESHOLD = 6_000   # above this, small local models get the chunked path
+CHUNK_SIZE = 3_000
+
+_CHUNK_MAP_SYSTEM = """You are a faithful formatter. Rewrite this screenplay fragment in clean Fountain format.
+RULES: Copy EVERY line word for word. Change ONLY the formatting (scene headings INT./EXT., character cues in CAPS on their own line, dialogue, direction).
+DO NOT summarize. DO NOT skip. DO NOT paraphrase. You are a format converter, not an editor.
+Output ONLY the fountain text."""
+
+
+def _split_scenes(text: str) -> list[str]:
+    """Split at scene headings so no chunk ever breaks mid-scene."""
+    parts = re.split(r"(?m)^(?=INT\.|EXT\.)", text)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _chunk_scenes(parts: list[str], max_chars: int = CHUNK_SIZE) -> list[str]:
+    chunks: list[str] = []
+    cur = ""
+    for p in parts:
+        if cur and len(cur) + len(p) > max_chars:
+            chunks.append(cur)
+            cur = p
+        else:
+            cur = f"{cur}\n\n{p}" if cur else p
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
+def _is_small_local_model(cfg: dict) -> bool:
+    """True when the configured provider is a local Ollama model (heuristic for
+    'may need chunking'). Cloud models get the full-text pass."""
+    return cfg.get("provider") == "ollama"
+
+
+async def _format_chunked(prompt: str) -> dict:
+    """Map-only chunked formatting: split at scene boundaries, format each chunk,
+    join. Logs every chunk to llm_logs with its index."""
+    cfg = llm_adapter._load_llm_config()
+    parts = _split_scenes(prompt)
+    chunks = _chunk_scenes(parts)
+    out: list[str] = []
+    t0 = time.monotonic()
+    for i, c in enumerate(chunks):
+        raw = await llm_adapter.chat_completion(_CHUNK_MAP_SYSTEM, c)
+        out.append(raw.strip())
+        _log_llm_request(
+            f"format:chunk {i + 1}/{len(chunks)}", c[:2000], raw[:2000],
+            elapsed_s=time.monotonic() - t0,
+        )
+    joined = "\n\n".join(out)
+    # Best-effort title: first # heading or ALL-CAPS line
+    title = None
+    for ln in prompt.strip().splitlines()[:6]:
+        s = ln.strip()
+        if s.startswith("# "):
+            title = s.lstrip("# ").strip()
+            break
+    if not title:
+        for ln in prompt.strip().splitlines()[:4]:
+            s = ln.strip()
+            if 3 <= len(s) <= 60 and not s.startswith(("INT.", "EXT.")) and s.upper() == s and any(ch.isalpha() for ch in s):
+                title = s.title()
+                break
+    return {"title": title or "Untitled", "script": joined}
+
+
 @router.post("/format")
 async def format_script(body: FormatBody):
     """Format an idea/prompt into a structured script via the LLM (no save)."""
+    import time
+    t0 = time.monotonic()
+    # Small local models get the chunked path for big inputs (measured fidelity
+    # cliff: 3K scene-boundary chunks = 89% vs 10K = 8-39% garbled). Cloud models
+    # keep the single-pass limit with guidance.
     if len(body.prompt) > MAX_LLM_PROMPT_CHARS:
+        if _is_small_local_model(llm_adapter._load_llm_config()):
+            data = await _format_chunked(body.prompt)
+            parsed = parse_fountain(data["script"])
+            _merge_character_manifest(parsed, [])
+            _log_llm_request("format:chunked-complete", body.prompt[:2000],
+                             {"title": data["title"], "chars": len(data["script"])},
+                             elapsed_s=time.monotonic() - t0)
+            return {
+                "title": data["title"],
+                "raw_text": data["script"],
+                "lines": parsed["lines"],
+                "characters": parsed["characters"],
+            }
         raise HTTPException(
             413,
             f"This text is {len(body.prompt):,} characters — too much for the LLM "
@@ -143,8 +232,6 @@ async def format_script(body: FormatBody):
             f"so it imports directly without the LLM. Otherwise, paste a shorter "
             f"summary or idea and let the LLM expand it.",
         )
-    import time
-    t0 = time.monotonic()
     try:
         data = await _format_with_llm(body.prompt)
     except HTTPException as e:
