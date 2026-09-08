@@ -81,7 +81,13 @@ async def _ollama_completion(cfg: dict, system: str, user: str) -> str:
             {"role": "user", "content": user},
         ],
         "stream": False,
-        "options": {"temperature": cfg.get("temperature", 0.4)},
+        # num_predict CAP IS CRITICAL: without it a confused small model can
+        # generate forever (observed: 77K tokens over 10 minutes until timeout).
+        # 8000 tokens is ~2x the largest expected script.
+        "options": {
+            "temperature": cfg.get("temperature", 0.4),
+            "num_predict": 8000,
+        },
     }
     async with httpx.AsyncClient(timeout=600) as client:
         resp = await client.post(url, json=payload)

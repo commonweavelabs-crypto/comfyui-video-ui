@@ -35,6 +35,13 @@ class FormatBody(BaseModel):
     title: str | None = None
 
 
+# Practical LLM input limit. Full existing scripts should use the local parser
+# (they start with INT./EXT. and skip the LLM); the LLM path is for ideas,
+# notes, and rough text. Past ~40K chars a small local model either truncates
+# the input or loops; fail fast with guidance instead of burning 10 minutes.
+MAX_LLM_PROMPT_CHARS = 20_000
+
+
 class CreateFromBody(BaseModel):
     """Create a script from already-formatted fountain text (no LLM call)."""
     title: str
@@ -127,6 +134,15 @@ def _log_llm_request(source: str, prompt: str, response: dict | str | None, erro
 @router.post("/format")
 async def format_script(body: FormatBody):
     """Format an idea/prompt into a structured script via the LLM (no save)."""
+    if len(body.prompt) > MAX_LLM_PROMPT_CHARS:
+        raise HTTPException(
+            413,
+            f"This text is {len(body.prompt):,} characters — too much for the LLM "
+            f"formatting pass (limit {MAX_LLM_PROMPT_CHARS:,}). If it's already a "
+            f"script, make sure it starts with a scene heading like 'INT.' or 'EXT.' "
+            f"so it imports directly without the LLM. Otherwise, paste a shorter "
+            f"summary or idea and let the LLM expand it.",
+        )
     import time
     t0 = time.monotonic()
     try:
