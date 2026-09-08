@@ -280,3 +280,22 @@ describing every screen, action, and workflow of the app in model-readable
 form. It powers roles 2/3/4 and must be versioned alongside UI changes
 (stale manual = confidently wrong AI). Consider generating parts of it from
 the route table automatically.
+
+### M-G. Monetization (discussion milestone — open questions, 2026-09-08)
+Seed idea (Gui): referral/partner placements in the provider picker — when a
+user needs compute they don't have locally, the model-picker lists cloud
+providers (API-key signups) and the app could earn referral revenue.
+PRINCIPLES (non-negotiable, Gui):
+- Never feel like a paywall, an upsell, or a limitation — the free/local path
+  is first-class forever; providers appear only as a solution inside an
+  existing problem ("your model can't do this job").
+- Legal + ethical review REQUIRED before any deal: disclosure (clearly
+  labeled recommendations, no dark patterns), no pay-to-win ranking (provider
+  order must stay neutral/clearly-labeled-as-sponsored), user data never
+  sold, and an equivalent always-visible free path next to any paid option.
+- Precedents to study: Brave/Rocket Lawyer referral models, affiliate
+  disclosure law (FTC), open-core ethical funding models.
+OPEN QUESTIONS: revenue split norms; whether provider placement is even
+needed (donations/sponsorship of the repo may suffice); disclosure UI copy;
+opt-out of sponsored listings.
+DEFER until: M-C (first output) + provider list (M-E step 2) ship.
