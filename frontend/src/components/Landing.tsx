@@ -119,8 +119,11 @@ export default function Landing({
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 pb-24">
-      {/* Wordmark */}
-      <div className="mb-10 text-center">
+      {/* Wordmark — each child centers INDEPENDENTLY on the page axis, so the
+          subtitle's box aligns with the headline box and the composer below
+          (Gui: the descriptive text must sit dead-center, not drift with the
+          headline's fixed width). */}
+      <div className="mb-10 flex flex-col items-center text-center">
         <div className="text-[11px] font-medium tracking-[3px] uppercase text-zinc-600 mb-3">
           ComfyUI Video Workflow
         </div>
