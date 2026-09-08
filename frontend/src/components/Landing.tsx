@@ -25,6 +25,7 @@ export default function Landing({
 }: LandingProps) {
   const [prompt, setPrompt] = useState('')
   const [formatting, setFormatting] = useState(false)
+  const [formatProgress, setFormatProgress] = useState<{ current: number; total: number; message: string } | null>(null)
   const [formatError, setFormatError] = useState<string | null>(null)
   const [showNameInput, setShowNameInput] = useState(false)
   const [projectName, setProjectName] = useState('')
@@ -40,6 +41,7 @@ export default function Landing({
     if (!prompt.trim() || formatting) return
     setFormatting(true)
     setFormatError(null)
+    let closeFmtWs: () => void = () => {}
     try {
       // If the input already looks like a Fountain script, skip the LLM
       // entirely — parse locally and open the doc view immediately.
@@ -69,36 +71,60 @@ export default function Landing({
         })
         return
       }
-      // Otherwise: full LLM formatting (needs API key configured)
-      const res = await fetch('/api/writing/format', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: t }),
-      })
-      if (!res.ok) {
-        const detail = await res.json().catch(() => ({}))
-        if (res.status === 502 || res.status === 503) {
-          // LLM unreachable -> guided connect flow (M-E) instead of a dead end
-          setLlmError(detail.detail || 'The LLM could not be reached')
-          setShowLlmConnect(true)
-          return
-        }
-        if (res.status === 413) {
-          // Input too big for the connected model -> same "always provide a way
-          // out" philosophy: open the model picker so they can switch to a more
-          // capable model (or shorten the text). Gui 2026-09-08.
-          setLlmError(detail.detail || 'Too much text for the connected model')
-          setShowLlmConnect(true)
-          return
-        }
-        throw new Error(detail.detail || 'The LLM could not be reached')
+      // Otherwise: full LLM formatting (needs API key configured).
+      // Ephemeral WS listener: chunk progress from the backend (M-E progress bar).
+      const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+      const wsPortFmt = window.location.port === '8502' ? '8503' : window.location.port
+      const fmtWs = new WebSocket(`${wsProto}//${window.location.hostname}:${wsPortFmt}/ws`)
+      let fmtActive = true
+      fmtWs.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data)
+          if (msg.type === 'format_progress' && fmtActive) {
+            setFormatProgress({ current: msg.current, total: msg.total, message: msg.message })
+          }
+        } catch { /* ignore non-JSON */ }
       }
-      const data = await res.json()
-      onScriptFormatted(data)
+      fmtWs.onopen = () => { /* connected; backend broadcasts will arrive */ }
+      closeFmtWs = () => { fmtActive = false; try { fmtWs.close() } catch { /* */ } }
+
+      try {
+        const res = await fetch('/api/writing/format', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: t }),
+        })
+        if (!res.ok) {
+          const detail = await res.json().catch(() => ({}))
+          if (res.status === 502 || res.status === 503) {
+            // LLM unreachable -> guided connect flow (M-E) instead of a dead end
+            setLlmError(detail.detail || 'The LLM could not be reached')
+            setShowLlmConnect(true)
+            return
+          }
+          if (res.status === 413) {
+            // Input too big for the connected model -> same "always provide a way
+            // out" philosophy: open the model picker so they can switch to a more
+            // capable model (or shorten the text). Gui 2026-09-08.
+            setLlmError(detail.detail || 'Too much text for the connected model')
+            setShowLlmConnect(true)
+            return
+          }
+          throw new Error(detail.detail || 'The LLM could not be reached')
+        }
+        const data = await res.json()
+        onScriptFormatted(data)
+      } catch (fmtErr) {
+        // Network-level failure of the format call (the outer catch handles
+        // script-parse errors); keep the message actionable.
+        setFormatError(fmtErr instanceof Error ? fmtErr.message : 'Failed to format script')
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to format script'
       setFormatError(msg)
     } finally {
+      closeFmtWs()
+      setFormatProgress(null)
       setFormatting(false)
     }
   }
@@ -184,6 +210,27 @@ export default function Landing({
           </div>
         )}
       </div>
+
+      {/* Chunk progress (small local models process scene chunks sequentially) */}
+      {formatting && formatProgress && (
+        <div className="mt-4 w-full max-w-2xl">
+          <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-1.5">
+            <span>{formatProgress.message}</span>
+            <span className="tabular-nums">{formatProgress.current}/{formatProgress.total}</span>
+          </div>
+          <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-brand-500 transition-all duration-500"
+              style={{ width: `${Math.round((formatProgress.current / Math.max(1, formatProgress.total)) * 100)}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
+            You're using a local small model, so your text is being processed in
+            sequential scene chunks — that's why this takes a bit. More capable
+            or cloud models format large scripts in one pass, faster.
+          </p>
+        </div>
+      )}
 
       {/* Secondary actions */}
       <div className="mt-8 flex items-center gap-3">

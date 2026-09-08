@@ -19,6 +19,7 @@ from pydantic import BaseModel
 import script_store
 import llm_adapter
 from config import PROJECT_ROOT
+from ws_manager import manager as ws_manager
 from context_pack import get_context_pack
 from fountain_parser import parse_fountain
 from llm_adapter import chat_completion
@@ -182,13 +183,35 @@ async def _format_chunked(prompt: str) -> dict:
     chunks = _chunk_scenes(parts)
     out: list[str] = []
     t0 = time.monotonic()
+    n = len(chunks)
+    await ws_manager.broadcast({
+        "type": "format_progress",
+        "stage": "chunking",
+        "current": 0,
+        "total": n,
+        "message": f"Split into {n} scene chunks — processing sequentially",
+    })
     for i, c in enumerate(chunks):
+        await ws_manager.broadcast({
+            "type": "format_progress",
+            "stage": "formatting",
+            "current": i + 1,
+            "total": n,
+            "message": f"Formatting scene chunk {i + 1} of {n}",
+        })
         raw = await llm_adapter.chat_completion(_CHUNK_MAP_SYSTEM, c)
         out.append(raw.strip())
         _log_llm_request(
-            f"format:chunk {i + 1}/{len(chunks)}", c[:2000], raw[:2000],
+            f"format:chunk {i + 1}/{n}", c[:2000], raw[:2000],
             elapsed_s=time.monotonic() - t0,
         )
+    await ws_manager.broadcast({
+        "type": "format_progress",
+        "stage": "done",
+        "current": n,
+        "total": n,
+        "message": "Joining chunks and parsing",
+    })
     joined = "\n\n".join(out)
     # Best-effort title: first # heading or ALL-CAPS line
     title = None
