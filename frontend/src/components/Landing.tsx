@@ -3,6 +3,7 @@ import { scriptsApi, renderSettingsApi } from '../api'
 import type { Script } from '../types'
 import OutputFormatPicker, { type OutputFormatSelection } from './OutputFormatPicker'
 import LlmConnectModal from './LlmConnectModal'
+import RotatingHeadline from './RotatingHeadline'
 
 interface LandingProps {
   onBrowseProjects: () => void
@@ -123,9 +124,7 @@ export default function Landing({
         <div className="text-[11px] font-medium tracking-[3px] uppercase text-zinc-600 mb-3">
           ComfyUI Video Workflow
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
-          Let&apos;s write your next movie idea
-        </h1>
+        <RotatingHeadline paused={Boolean(prompt)} />
         <p className="text-sm text-zinc-500 mt-3 max-w-md leading-relaxed">
           Describe an idea, paste a script, or start from scratch. The LLM formats
           everything — characters, dialogue, and direction — ready for the timeline.
