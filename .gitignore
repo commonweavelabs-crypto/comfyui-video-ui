@@ -14,3 +14,6 @@ data/render_stats.json
 
 .megamemory/
 data/llm_config.json
+
+# LLM request logs can contain user prompts; keep local only
+data/llm_logs/
