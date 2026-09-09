@@ -313,6 +313,14 @@ a natural chunk). Also: strip a leading "Fountain" from LLM-generated titles
 (observed: model announced the format in the title); pass intent-classified
 titles into the chunked path (currently "Untitled").
 
+### Engine abstraction note (2026-09-09) — see docs/ARCHITECTURE-ENGINE-NOTE.md
+Decision record: ComfyUI = engine (load-bearing, keep), HF = warehouse
+(broadening toward engine services — Inference Providers, Endpoints, HF Jobs —
+watch quarterly). Lock-in insurance: ALL ComfyUI touchpoints stay inside
+pipeline.py (+comfy_events.py); the 5-method engine interface (submit, status,
+progress, hardware, assets) is the only surface the rest of the app may know.
+Blast radius of an engine swap: ~2-6 weeks, one module, zero UI changes.
+
 ### M-G. Monetization (discussion milestone — open questions, 2026-09-08)
 Seed idea (Gui): referral/partner placements in the provider picker — when a
 user needs compute they don't have locally, the model-picker lists cloud
