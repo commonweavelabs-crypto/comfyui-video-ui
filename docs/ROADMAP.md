@@ -332,6 +332,15 @@ for maintainer upkeep (first hosted project: this UI). This app's pieces:
 Full spec + open questions in the vision doc; Cardano ledger is the money
 transparency layer. Name TBD (working name: Compute Fund).
 
+### Ecosystem decisions (2026-09-09) — see docs/ECOSYSTEM-DECISIONS.md
+GitHub home DECIDED: CommonWeave umbrella (org account) — siblings ship
+together, org ownership matches community governance; "David" account is a
+service identity, holds no repos. HF auth path: personal-access token (skip
+the Addoor OAuth node quirk); token future-proofs M-A model pulls. Obsidian
+taxonomy: #ecosystem/commonweave > #project/<name> > #roadmap/ecosystem.
+Follow-up #1 (HIGH): create org repo + wire remote + first push (needs PAT).
+Follow-up #3: recover Compute Fund manifesto from Mac.
+
 ### M-G. Monetization (discussion milestone — open questions, 2026-09-08)
 Seed idea (Gui): referral/partner placements in the provider picker — when a
 user needs compute they don't have locally, the model-picker lists cloud

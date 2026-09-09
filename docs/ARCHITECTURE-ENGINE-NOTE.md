@@ -1,3 +1,10 @@
+---
+title: ARCHITECTURE ENGINE NOTE
+tags: ['ecosystem/commonweave', 'decision', 'architecture']
+status: decision-record
+related: ['[[COMPUTE-FUND-VISION]]', '[[ECOSYSTEM-DECISIONS]]']
+---
+
 # Architecture Note: Engine Abstraction — why ComfyUI and how we stay un-locked
 
 > Decision record, 2026-09-09. Question: "Are we building on top of another UI when

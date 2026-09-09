@@ -1,3 +1,16 @@
+---
+tags:
+  - ecosystem/commonweave
+  - project/compute-fund
+  - roadmap/ecosystem
+  - manifesto
+status: spec
+related:
+  - "[[ECOSYSTEM-DECISIONS]]"
+  - "[[ARCHITECTURE-ENGINE-NOTE]]"
+  - "[[ROADMAP]]"
+---
+
 # The Compute Fund — patronage platform for LLM-token-funded maintenance
 
 > Broader vision above the Video UI roadmap. Brainstorm with Gui, 2026-09-09.
@@ -71,3 +84,17 @@ releases, model updates, feature work.
 - Stack sketch: Next.js + Stripe + Supabase.
 - Bottleneck linkage: Compute Fund MVP is the funding bootstrap; Video UI is
   the first proof of the model.
+
+## Decisions affecting the fund (2026-09-09, see docs/ECOSYSTEM-DECISIONS.md)
+
+- **Home: CommonWeave GitHub org.** compute-fund and comfyui-video-ui are
+  sibling repos under the umbrella — visitors flow between them by design.
+- **Hydra caveat:** HF's Hydra is HF's own project (they run Cardano research)
+  — verify its maturity independently before relying on it; Cardano remains
+  the ledger layer regardless.
+- **Framing decision needed at build time:** "donations fund the project;
+  boosted queue is priority influence, not a purchase" — protects the
+  donations-vs-services legal line (feeds M-G review).
+- **Model-hash guarantee is a fund-level feature, not per-app:** every hosted
+  project inherits hash-verified pulls; this becomes part of maintainer
+  onboarding (open Q5).
