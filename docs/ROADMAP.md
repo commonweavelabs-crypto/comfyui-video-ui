@@ -321,6 +321,17 @@ pipeline.py (+comfy_events.py); the 5-method engine interface (submit, status,
 progress, hardware, assets) is the only surface the rest of the app may know.
 Blast radius of an engine swap: ~2-6 weeks, one module, zero UI changes.
 
+### M-F3. Compute Fund integration (see docs/COMPUTE-FUND-VISION.md) (2026-09-09)
+Above-the-UI vision: patronage platform where donations convert to LLM tokens
+for maintainer upkeep (first hosted project: this UI). This app's pieces:
+- Free ticket submission (bugs/features/breakage) + donation-boosted priority
+- Opt-in automatic crash/error reporting (foundation: llm_logs, render_stats)
+- LLM triage safety layer (rejects paid-sabotage tickets, visible reasons)
+- HF-style hash verification for every model/dependency/release
+- Light "Support this project" embed; free path stays first-class forever
+Full spec + open questions in the vision doc; Cardano ledger is the money
+transparency layer. Name TBD (working name: Compute Fund).
+
 ### M-G. Monetization (discussion milestone — open questions, 2026-09-08)
 Seed idea (Gui): referral/partner placements in the provider picker — when a
 user needs compute they don't have locally, the model-picker lists cloud
