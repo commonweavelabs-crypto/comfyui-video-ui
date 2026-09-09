@@ -18,7 +18,17 @@ Gui has three GitHub identities:
 3. **"David"** — a functional email/account created for David's Gmail access
    (not a real maintainer identity).
 
-**Decision: host the Video UI under CommonWeave.** Reasoning:
+**Decision: host the Video UI under CommonWeave.** CONFIRMED 2026-09-09:
+account exists as GitHub **user** `Commonweave` (created 2026-02-05, currently
+0 public repos), email commonweavelabs@gmail.com. Remote pre-wired:
+`https://github.com/Commonweave/comfyui-video-ui.git`. Git identity set to
+Commonweave <commonweavelabs@gmail.com>. Options:
+- Convert the user account to an **organization** (GitHub: Settings →
+  "Convert to organization") — free, keeps the name, enables teams. This is
+  the recommended form once a second collaborator (David) joins; a user
+  account works fine until then.
+- Note: `commonweavelabs` and `common-weave` are free as org names if Gui
+  prefers that handle; `Commonweave` is taken (him). Reasoning:
 - The UI is designed to be Compute Fund's first hosted project — siblings belong
   under the same umbrella so visitors cross-pollinate ("people get excited
   about the UI, walk into the Fund, start using it").
