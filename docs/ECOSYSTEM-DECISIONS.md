@@ -18,7 +18,11 @@ Gui has three GitHub identities:
 3. **"David"** — a functional email/account created for David's Gmail access
    (not a real maintainer identity).
 
-**Decision: host the Video UI under CommonWeave.** CONFIRMED 2026-09-09:
+**Decision: host the Video UI under CommonWeave.** ✅ DONE 2026-09-09: repo
+live at https://github.com/commonweavelabs-crypto/comfyui-video-ui (public,
+master pushed; the logged-in umbrella account is `commonweavelabs-crypto` —
+note the GUI account `Commonweave` from Feb 2026 is a separate empty user).
+CONFIRMED 2026-09-09:
 account exists as GitHub **user** `Commonweave` (created 2026-02-05, currently
 0 public repos), email commonweavelabs@gmail.com. Remote pre-wired:
 `https://github.com/Commonweave/comfyui-video-ui.git`. Git identity set to
