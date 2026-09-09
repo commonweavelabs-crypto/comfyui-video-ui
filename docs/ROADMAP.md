@@ -338,8 +338,11 @@ together, org ownership matches community governance; "David" account is a
 service identity, holds no repos. HF auth path: personal-access token (skip
 the Addoor OAuth node quirk); token future-proofs M-A model pulls. Obsidian
 taxonomy: #ecosystem/commonweave > #project/<name> > #roadmap/ecosystem.
-Follow-up #1 (HIGH): create org repo + wire remote + first push (needs PAT).
-Follow-up #3: recover Compute Fund manifesto from Mac.
+Follow-up #1 ✅ DONE 2026-09-09: repo live at
+github.com/commonweavelabs-crypto/comfyui-video-ui (the real umbrella account;
+token generated via browser, remote embedded, master pushed). Follow-up #3:
+recover Compute Fund manifesto from Mac. Follow-up #2 (HF PAT): pending until
+model pulls needed.
 
 ### M-G. Monetization (discussion milestone — open questions, 2026-09-08)
 Seed idea (Gui): referral/partner placements in the provider picker — when a
