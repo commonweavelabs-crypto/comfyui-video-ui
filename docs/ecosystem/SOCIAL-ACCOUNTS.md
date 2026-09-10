@@ -45,13 +45,14 @@ Bio now reads: "Cardano-powered OSS ecosystem. ComfyUI Video UI + Compute Fund
 — maintenance paid in LLM compute. YT: youtube.com/@CommonweaveLabs" (160/160
 chars). Display name: Commonweave Labs. Location: Building in public.
 Website field: points at the evidence-hub GitHub page.
-UPDATE (post-rename): Gui renamed via password step; the handle is now
-@Commonweavelabs on the new account. Bio re-edit on the new account hit an
-editing quirk (the bio field's select-all didn't clear cleanly — old + new text
-merged). Final bio state needs Gui's visual check in the preview pane before
-publishing; current draft target: "Cardano-powered OSS ecosystem. ComfyUI
-Video UI + Compute Fund. YT: youtube.com/@CommonweaveLabs X:
-x.com/Commonweavelabs" (GitHub link also available for the website field).
+UPDATE (post-rename): ✅ RESOLVED 2026-09-09. Gui cleared the field; fresh bio
+typed, verified 157/160 in-editor, saved, and confirmed LIVE on the public
+profile: "Cardano-powered OSS ecosystem. ComfyUI Video UI + Compute Fund —
+maintenance paid in LLM compute. YT: youtube.com/@CommonweaveLabs · X:
+x.com/Commonweavelabs" (both auto-linked by X). LESSON: X's bio field is a
+contenteditable whose select-all misbehaves under synthetic input — verify the
+char counter (not just "typed ok") before saving, and have the human clear the
+field when synthetic selection fights back.
 
 ## To reach full operational state
 
