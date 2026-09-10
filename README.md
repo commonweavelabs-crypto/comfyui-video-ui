@@ -43,6 +43,13 @@ data/               scripts catalog (JSON, git-tracked)
 docs/ROADMAP.md     Milestones, decisions, backlog — the project's source of truth
 ```
 
+## Social / ecosystem
+
+- X: x.com/Commonweavelabs · YouTube: youtube.com/@CommonweaveLabs
+- Managed via the `commonweave-social-media` skill (browser-first, preview pane).
+- Ecosystem docs: `docs/ECOSYSTEM-DECISIONS.md`, `docs/COMPUTE-FUND-VISION.md`,
+  `docs/ecosystem/SOCIAL-ACCOUNTS.md`, `docs/ecosystem/ROADMAP.md`.
+
 ## Core concepts
 
 - **Project canvas (project-level, never per-scene):** frame size (destination

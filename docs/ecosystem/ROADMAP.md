@@ -17,6 +17,10 @@ related: ['[[ROADMAP]]', '[[COMPUTE-FUND-VISION]]', '[[ECOSYSTEM-DECISIONS]]']
 | 2 | GitHub: CommonWeave org + repos + first push (needs Gui's PAT) | ecosystem | READY (identity+helper set) | all remote work |
 | 3 | Recover CommonWeave manifesto from Mac → version | manifesto | pending | fund copy |
 
+### Ops tooling (2026-09-09)
+- `commonweave-social-media` skill created (browser-first account management,
+  brand voice, hard rules: no passwords/OTP handling, verify-before-save).
+
 ## Phase 2 — Launch (after M-C green)
 | # | Item | Project | Status |
 |---|---|---|---|
