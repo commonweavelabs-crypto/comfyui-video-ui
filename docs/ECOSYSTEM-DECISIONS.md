@@ -55,6 +55,16 @@ commonweave/
 Obsidian vault tags for the ecosystem: `#ecosystem/commonweave`,
 `#project/comfyui-video-ui`, `#project/compute-fund`, `#roadmap/ecosystem`.
 
+## D1b. Brand name resolved: "CommonWeave Labs" (with S) — 2026-09-09
+
+The X handle @CommonweaveLab (no S) is the outlier; every other asset uses the S:
+email commonweavelabs@gmail.com, GitHub commonweavelabs-crypto, YouTube
+@CommonweaveLabs, GitHub profile "CommonWeave Labs", all project docs (19 vs 4
+mentions). Grammar: plural "Labs" is the tech-brand standard for an umbrella
+spawning multiple projects (Google Labs, Bell Labs) — singular "Lab" reads as
+one workshop. ACTION: rename X handle in X Settings → Account → Username change
+(keeps followers/posts) to @CommonweaveLabs if available at rename time.
+
 ## D2. Hugging Face auth — what the "AD Hugging Face" error is
 
 The icon Gui clicked is **ComfyUI-Manager's model-database entry for
