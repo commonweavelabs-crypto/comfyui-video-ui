@@ -30,6 +30,15 @@ related: "[[ECOSYSTEM-DECISIONS]]"
   channel lives under a different Google login.
 - **No Google (YouTube) password/token stored** for commonweavelabs@gmail.com.
 
+## X profile updated (2026-09-09, bio via settings/profile — no password needed)
+Bio now reads: "Cardano-powered OSS ecosystem. ComfyUI Video UI + Compute Fund
+— maintenance paid in LLM compute. YT: youtube.com/@CommonweaveLabs" (160/160
+chars). Display name: Commonweave Labs. Location: Building in public.
+Website field: points at the evidence-hub GitHub page.
+REMAINING (needs Gui's password): Settings → Your account → Account
+information → (enter password) → Username → change @CommonweaveLab to
+@CommonweaveLabs. Handles are changeable; followers/posts preserved.
+
 ## To reach full operational state
 
 1. **X:** log in to @CommonweaveLab in the preview browser (Gui does the login —
