@@ -30,14 +30,28 @@ related: "[[ECOSYSTEM-DECISIONS]]"
   channel lives under a different Google login.
 - **No Google (YouTube) password/token stored** for commonweavelabs@gmail.com.
 
+## ⚠️ TWO X ACCOUNTS EXIST (discovered 2026-09-09 after Gui's rename)
+- **@CommonweaveLab** — July 2026, 1 post, 53 following, 1 follower. The ORIGINAL.
+- **@Commonweavelabs** — Sept 2026, 7 posts (real content: the AI-agent-team
+  education thread), 8 followers. Gui created this fresh account with the new
+  handle; this is the one logged into the Hermes preview browser now.
+- DECISION NEEDED: keep @Commonweavelabs as primary (it has the correct handle
+  + real content; the old account's only asset is its 53-account following
+  list) and let the original sit dormant, OR log into the original and repost.
+  Recommend: keep the new one, follow the same 53 accounts again over time.
+
 ## X profile updated (2026-09-09, bio via settings/profile — no password needed)
 Bio now reads: "Cardano-powered OSS ecosystem. ComfyUI Video UI + Compute Fund
 — maintenance paid in LLM compute. YT: youtube.com/@CommonweaveLabs" (160/160
 chars). Display name: Commonweave Labs. Location: Building in public.
 Website field: points at the evidence-hub GitHub page.
-REMAINING (needs Gui's password): Settings → Your account → Account
-information → (enter password) → Username → change @CommonweaveLab to
-@CommonweaveLabs. Handles are changeable; followers/posts preserved.
+UPDATE (post-rename): Gui renamed via password step; the handle is now
+@Commonweavelabs on the new account. Bio re-edit on the new account hit an
+editing quirk (the bio field's select-all didn't clear cleanly — old + new text
+merged). Final bio state needs Gui's visual check in the preview pane before
+publishing; current draft target: "Cardano-powered OSS ecosystem. ComfyUI
+Video UI + Compute Fund. YT: youtube.com/@CommonweaveLabs X:
+x.com/Commonweavelabs" (GitHub link also available for the website field).
 
 ## To reach full operational state
 
