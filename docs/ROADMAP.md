@@ -366,3 +366,60 @@ OPEN QUESTIONS: revenue split norms; whether provider placement is even
 needed (donations/sponsorship of the repo may suffice); disclosure UI copy;
 opt-out of sponsored listings.
 DEFER until: M-C (first output) + provider list (M-E step 2) ship.
+
+## M-H. Script-to-screen fidelity check ("did the render follow the prompt?") (brainstorm, 2026-09-14 — Gui's idea, inspired by taruma/SceneFlow)
+
+DECISION (Gui, 2026-09-10): build our OWN version, integrated natively — do NOT embed the
+SceneFlow web app (Frankenstein risk; different stack, different UX; MIT license permits
+copying but a standalone Next.js app does not belong inside our UI). Take the IDEAS
+(cue model, adherence analysis) and design them into our stack. We are not cloning its
+code line-by-line; we use the concepts + our own design.
+
+Reference: taruma/SceneFlow (MIT, ★178) — screenplay↔video sync viewer; 8 color-coded cue
+types (dialogue/action/camera/shot/audio/VFX/transition/environment), timing buffers,
+adherence findings (missed elements, camera drift), Auteur Script state-chained format
+(5-part staging metadata; sibling of our director-persona context pack). Honest limit:
+NO auto-cue generation — cues are manual or via external multimodal model. Live demo:
+sceneflow.taruma.my.id. Archive: ig-ddmmpvtjuo4-sceneflow.
+
+### What we get for free (our pipeline already has the hard part)
+- Per-scene renders with real timings (render_stats) → cue timestamps exist natively
+- Scenes are already prompt-addressable units — each scene's prompt IS the script segment
+- Fountain format already parsed → script highlighting has structure to anchor to
+
+### H-1. Scene fidelity view (the SceneFlow-inspired core)
+On the scene card: "fidelity" panel. The scene's prompt elements (parsed into
+dialogue/action/camera/VFX tokens by the LLM layer — the same breakdown we already make)
+are color-coded and time-mapped against the actual render. Playback highlights which
+element is on screen. Manual correction: drag cue boundaries in Edit Mode.
+Design questions: per-element breakdown at generation time (store the JSON from the
+director pass) vs post-hoc parse? cue auto-alignment when prompts change (SceneFlow has
+this; reuse the approach)?
+
+### H-2. Dialogue verification with local Whisper (Gui's feature — NEW, not in SceneFlow)
+A lightweight whisper model (faster-whisper small/tiny — we already ship local STT in
+Hermes) listens to the RENDERED audio track:
+- Transcribes the generated video's audio → word-level timestamps
+- Matches each script line against the transcript (fuzzy alignment)
+- Verdict per scene: all lines spoken / missing lines / timing offsets
+- Click a script word → video jumps to exactly when that word is spoken (word-level sync)
+- Feeds the same fidelity panel as H-1 (dialogue cues auto-verified, not manual)
+Prereq: scenes with generated audio (audio.py / generate-audio endpoint exists).
+Model tier: tiny/base local (fast, CPU-viable); this is a background job, not realtime.
+
+### H-3. On-screen subtitles from verified lines
+The H-2 word timestamps double as subtitle timing: burn-in or sidecar SRT export per
+scene (user choice). Free path: ffmpeg subtitles filter, no new deps. Reuses the
+captions editing UX that already exists (Audio and Captions section of the timeline).
+
+### Integration notes (our own design, no SceneFlow code copied)
+- Cue storage: extend the scene JSON (cues[] alongside renders[]) — versioned like
+  everything else; JSON-portable projects is a SceneFlow idea worth keeping.
+- The multimodal auto-cue path (SceneFlow's suggested Gemini trick): OUR equivalent is
+  a local vision model (qwen3-vl on the box) scoring frame vs prompt element — the
+  compute-server pattern we already have. Optional, opt-in, expensive-per-frame.
+- UI: fidelity panel lives INSIDE the scene card (our design), not a separate app.
+- Order: H-1 after M-C ships (needs real renders); H-2 next (whisper infra exists);
+  H-3 is small once H-2 has word timestamps.
+- License note: SceneFlow is MIT — copying ideas AND code is legal, but we take ideas
+  only; zero code from a Next.js app belongs in our stack.
