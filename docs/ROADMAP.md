@@ -423,3 +423,36 @@ captions editing UX that already exists (Audio and Captions section of the timel
   H-3 is small once H-2 has word timestamps.
 - License note: SceneFlow is MIT — copying ideas AND code is legal, but we take ideas
   only; zero code from a Next.js app belongs in our stack.
+
+## M-I. DLSS 5 neural post-process (enhancer step for renders) (approved by Gui 2026-09-14, inspired by yt-hiicmgr-j38)
+
+ComfyUI-DLSS5-Enhancer (Blueforcer, MIT nodes + separate runtime) drives NVIDIA's NGX
+feature-18 neural renderer as a POST-PROCESSING step over rendered video/images: real
+material reconstruction (skin subsurface, hair light transmission, fabric) + optional
+1.5x-3x upscale. GPU answer (Gui's question): NVIDIA ONLY — RTX 30/40/50; RTX 20 refused;
+AMD/Intel unsupported (proprietary NGX runtime). AMD/Intel users get a non-neural fallback
+(see below). Node pack INSTALLED 2026-09-14 on this machine: cloned to
+C:\ComfyUI_Portable\ComfyUI\custom_nodes, runtime staged from our existing
+dlss5-visual-enhancer install, selftest pending official runtime download (467MB, the local
+upstream's dlssnr build fails to load - Win32 126; official 3.0 zip is the known-good set).
+
+### I-1. Render output -> DLSS5 Enhance Video File (the core win)
+Scene render completes -> optional "Enhance with DLSS 5" step in the export path. Native
+D3D12 worker hosts ReShade/RenoDX/NGX itself (no game hooks -> the POOLS driver fault does
+NOT apply). Gui: "users with NVIDIA GPUs can use it to upscale and improve their AI videos
+and images."
+- Node in the render pipeline as an opt-in post step (checkbox in export flow)
+- Requires NVIDIA RTX 30+; UI should detect GPU and hide/label the step on non-NVIDIA
+- Performance note: worker starts once per render; prefer one long batch
+
+### I-2. Non-NVIDIA fallback path (quality parity effort)
+AMD/Intel users can't run NGX feature 18. Options to evaluate: Real-ESRGAN/SeedVR2 upscale
+nodes as the equivalent step (SeedVR2 already used in the MiniMax H3 upscaling tutorial
+pattern), clearly labeled as the alternative for non-NVIDIA hardware.
+
+### I-3. Auto-upscale tier presets
+Low-res draft -> upscale pattern (from MiniMax H3 tutorial): generate 0.2MP draft,
+DLSS5 Enhance at 2x finish. Pairs with M-A reference-sheet entry.
+
+References: yt-hiicmgr-j38 (tutorial), Blueforcer/ComfyUI-DLSS5-Enhancer (MIT nodes),
+Merserk/dlss5-visual-enhancer (runtime, installed locally), wccftech RTX 20-40 coverage.
