@@ -501,6 +501,30 @@ turn it off if distracting. Differentiates the app's look; polished and unique.
    render moment — the reward frame"), cite R-10 in the PR.
 
 
+## Side-note: Qwen Audio Agent (voice interface research — verdict: watch-list) (2026-09-14)
+
+**Obsidian tags:** #project/comfyui-video-ui #voice #watch-list #qwen-audio
+**Source:** Better Stack video (yt-blpz1xgfhck-qwen-audio-agent) → repo: github.com/QwenAudio/qwen-audio-agent (Apache-2.0, Node ≥22.22.2)
+
+**Research verdict (subagent, evidence-based): WATCH-LIST, not install now.**
+- What it is: full-duplex voice runtime in front of a coding agent (STT/LLM/TTS with barge-in,
+  live status spoken back, async task handoffs via ACP — Agent Client Protocol over stdio).
+- DEFAULT voice frontend is CLOUD (Alibaba Bailian/DashScope, API key) — local mode needs
+  ~6-10GB VRAM which collides with ComfyUI's 16GB on the 5070 Ti.
+- DEALBREAKER for us: backends must speak ACP over stdio — does NOT accept generic
+  OpenAI-compatible HTTP. Our FastAPI backend would need a nontrivial ACP wrapper, and its
+  task model is coding-agent-shaped, not render-scene-shaped.
+- vs faster-whisper + TTS + push-to-talk: full-duplex adds real value (barge-in, presence,
+  async handoffs) but M-F voice chat gets ~90% coverage from a simple STT→LLM→TTS loop on
+  our existing OpenAI-compatible layer, at a fraction of the complexity.
+- The ONE piece worth tracking: the **embeddable Gateway** (createGatewayApplication, v1.11+)
+  — the only credible path to voice inside the Electron app without adopting the whole product.
+- No ComfyUI integration exists.
+
+**M-F voice plan stays simple:** faster-whisper STT → OpenAI-compatible LLM → TTS + push-to-talk.
+Revisit Qwen Audio Agent only if: (a) true full-duplex barge-in is wanted, (b) ACP wrapper accepted,
+(c) Bailian cloud for voice accepted.
+
 ## Side-note: Sandcastle (AFK agent orchestration) — workflow upgrade path (filed 2026-09-14)
 
 **Obsidian tags:** #project/comfyui-video-ui #workflow/agent-orchestration #tool/sandcastle
