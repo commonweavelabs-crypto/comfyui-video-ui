@@ -367,7 +367,7 @@ needed (donations/sponsorship of the repo may suffice); disclosure UI copy;
 opt-out of sponsored listings.
 DEFER until: M-C (first output) + provider list (M-E step 2) ship.
 
-## M-H. Script-to-screen fidelity check ("did the render follow the prompt?") (brainstorm, 2026-09-14 — Gui's idea, inspired by taruma/SceneFlow)
+## M-H. Script-to-screen fidelity check ("did the render follow the prompt?") (brainstorm, 2026-09-14) → docs/M-H-FIDELITY-CHECK.md — Gui's idea, inspired by taruma/SceneFlow)
 
 DECISION (Gui, 2026-09-10): build our OWN version, integrated natively — do NOT embed the
 SceneFlow web app (Frankenstein risk; different stack, different UX; MIT license permits
@@ -431,8 +431,7 @@ selection confusion). Expose ergonomic WORKFLOW tools (e.g. 'render_scene', 'con
 parameters/sub-tools on demand. Applies to: M-F role routing, the AI Manual's tool surface,
 and any future MCP server for the Video UI itself.
 
-## M-I. DLSS 5 neural post-process
-## M-I. DLSS 5 neural post-process (enhancer step for renders) (approved by Gui 2026-09-14, inspired by yt-hiicmgr-j38)
+## M-I. DLSS 5 neural post-process (enhancer step for renders) (approved by Gui 2026-09-14, inspired by yt-hiicmgr-j38) → docs/M-I-DLSS5-POSTPROCESS.md
 
 ComfyUI-DLSS5-Enhancer (Blueforcer, MIT nodes + separate runtime) drives NVIDIA's NGX
 feature-18 neural renderer as a POST-PROCESSING step over rendered video/images: real
@@ -464,3 +463,55 @@ DLSS5 Enhance at 2x finish. Pairs with M-A reference-sheet entry.
 
 References: yt-hiicmgr-j38 (tutorial), Blueforcer/ComfyUI-DLSS5-Enhancer (MIT nodes),
 Merserk/dlss5-visual-enhancer (runtime, installed locally), wccftech RTX 20-40 coverage.
+
+## M-J. Liquid mode (QuickLiquid optical-refraction theme) (post-MVP polish, approved by Gui 2026-09-14) → docs/M-J-LIQUID-MODE.md
+
+**Obsidian tags:** #project/comfyui-video-ui #roadmap/m-j-liquid-mode #polish/theming
+**Source:** githubsignals reel (ig-ddnatzsaur2-quickliquid) → repo: github.com/amarnath3003/quickLiquid (MIT, ★128, active)
+**What:** Real optical-refraction "liquid glass" for web UI — WebGL shader bending the actual pixels
+behind UI elements (Apple-style depth), not blur+transparency fakery. SVG refraction with CSS-only
+fallback; adapts tint/lighting/shadow for light and dark backdrops.
+**Gui's vision:** a THIRD display mode alongside dark/light — **Liquid mode** — opt-in, user can
+turn it off if distracting. Differentiates the app's look; polished and unique.
+
+### Scope (deliberately small)
+- Liquid mode = theme preset applied to 1-2 hero surfaces ONLY (export-complete overlay, preview
+  panel edge). NOT app-wide glass (anti-slop R-10 dose cap: max 1-2 elements).
+- Theme switcher gains a third option: Dark / Light / **Liquid** (Liquid = dark base + liquid glass
+  accents).
+- Ship AFTER MVP + M-C; this is polish, not function.
+
+### Preparations (do now, cheap)
+- [ ] Theme architecture: confirm the CSS theme variables are a single source (tokens file) so a
+      third theme is a data change, not a refactor.
+- [ ] quickLiquid vendoring plan: it's MIT + copy-paste friendly; at implementation time, vendor it
+      under `frontend/src/vendor/` with attribution in THIRD-PARTY notices (do NOT npm-install —
+      pin the source like design-md-chrome does).
+- [ ] GPU note: WebGL shader per glass element — verify ComfyUI render queue isn't competing for
+      the same GPU when the overlay is visible (it composites on the frontend, negligible, but
+      document it).
+- [ ] Fallback: CSS-only mode for low-end GPUs (the library ships it — keep the toggle).
+
+### Implementation sketch (when we get here, post-MVP)
+1. Add `theme: 'dark' | 'light' | 'liquid'` to settings store (persist like the others).
+2. Vendor quickLiquid; wrap its engine in a `<LiquidGlass>` component with a feature-detect
+   (WebGL available? else render flat dark).
+3. Apply to: export-complete celebration overlay + preview panel header only.
+4. Anti-slop gate: write the purpose statement in the component ("depth cue for the completed
+   render moment — the reward frame"), cite R-10 in the PR.
+
+
+## Side-note: Sandcastle (AFK agent orchestration) — workflow upgrade path (filed 2026-09-14)
+
+**Obsidian tags:** #project/comfyui-video-ui #workflow/agent-orchestration #tool/sandcastle
+**Source:** Matt Pocock video (yt-e5qk3cdvqm-sandcastle) → repo: github.com/mattpocock/sandcastle (MIT, ★8,020)
+**What:** TypeScript library orchestrating sandboxed coding agents (Claude Code et al) AFK:
+auto-pick-up tasks → implement → review → merge, in parallel, with isolation. No permission prompts.
+
+**Where it fits OUR workflow:** the mini-box overnight job system (queue files on \\DESKTOP-0GIFKM1\C$\jobs,
+single-shot LLM prompts today) would graduate to **parallel agent pipelines** with review gates if
+we adopt this pattern. When to revisit: when overnight work needs multi-step tasks that need
+verification (e.g. 'implement + test + review' rather than 'write this doc'). NOT now — single-shot
+prompts cover current needs. Trigger: if we start shipping box jobs that modify code.
+
+**Links:** video: youtu.be/E5-QK3CDVQM · repo: github.com/mattpocock/sandcastle · archive: yt-e5qk3cdvqm-sandcastle
