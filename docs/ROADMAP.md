@@ -424,6 +424,14 @@ captions editing UX that already exists (Audio and Captions section of the timel
 - License note: SceneFlow is MIT — copying ideas AND code is legal, but we take ideas
   only; zero code from a Next.js app belongs in our stack.
 
+## Design guidance for M-F/M-H (from yt-bqrhbq-kge, Neon, Sept 2026)
+MCP tool design: do NOT map every backend endpoint to an agent tool (context bloat, tool
+selection confusion). Expose ergonomic WORKFLOW tools (e.g. 'render_scene', 'connect_llm',
+'export_project') with progressive discovery - the agent sees top-level tools and discovers
+parameters/sub-tools on demand. Applies to: M-F role routing, the AI Manual's tool surface,
+and any future MCP server for the Video UI itself.
+
+## M-I. DLSS 5 neural post-process
 ## M-I. DLSS 5 neural post-process (enhancer step for renders) (approved by Gui 2026-09-14, inspired by yt-hiicmgr-j38)
 
 ComfyUI-DLSS5-Enhancer (Blueforcer, MIT nodes + separate runtime) drives NVIDIA's NGX
