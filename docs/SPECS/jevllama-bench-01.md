@@ -33,3 +33,31 @@ Two dimensions in ONE call, sub-half-second, enum-locked. The router core works.
 - Accuracy needs the rubric + real probabilities (SemIf) + bigger golden set before
   trusting thresholds. 0.6B is NOT good enough for classification (50%).
 - GPU contention check pending: model stays loaded; 4B ~2.5GB VRAM alongside ComfyUI.
+
+
+## Round 2 results (same 8-msg set, same machine)
+| Model | Bare prompt | With role rubric | Rubric latency |
+|---|---|---|---|
+| qwen3:0.6b | 4/8 (50%) | not tested (ruled out) | — |
+| qwen3:4b | 6/8 (75%) | **8/8 (100%)**, reproduced at temp=0 | 0.20-0.44s |
+| qwen3:8b | 4/8 (50%) — WORSE than 4B bare | 7/8 (88%) | 0.13-0.56s |
+
+## THE HEADLINE: the rubric is the model
+Bigger did NOT mean better (8B was worse than 4B with the bare prompt). Quality came
+from the ROLE RUBRIC (one line per role defining scope). 4B + rubric = 8/8 twice,
+0.2s per decision. This is a prompt-engineering result, not a params result.
+
+## Hardware footprint (Gui's 6GB-RAM question)
+- 4B model = 2.5GB weights, needs ~3GB VRAM/RAM. Works on machines with 6-8GB free.
+- 0.6B = 522MB (but 50% accuracy - NOT viable as classifier).
+- With 4B + 8B BOTH loaded + ComfyUI-era desktop usage: 11.8/16.3GB VRAM on 5070 Ti.
+  Router-only machines need just the 4B (~3GB).
+- Enterprise cloud classifier = TypeSafe (waitlist) or a bigger cloud model via enum
+  JSON - same interface, bundled as enterprise convenience feature (Gui's idea, sound:
+  multi-machine fleets get one consistent classifier without local hardware).
+
+## Next
+1. Full golden set (100 messages, labeled by me + spot-checked by Gui).
+2. SemIf-style true logit probabilities (confidence thresholds need real numbers,
+   not just argmax) - via llama.cpp logprobs or SemIf scorer on the 4B.
+3. Box queue as 4th lane integration test.
