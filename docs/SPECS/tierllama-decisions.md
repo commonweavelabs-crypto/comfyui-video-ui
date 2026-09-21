@@ -2,6 +2,9 @@
 #project/tierllama #spec
 
 ## Locked (Gui-confirmed, rounds 1-2, 2026-09-21)
+1. NAME LOCKED: **Jevllama** (Gui, 2026-09-21 eve: "Jevllama it is! If ollama wants its
+   O inserted they can buy us!"). Internal joke: "Jev-O-llama". Rename safety valve:
+   if TypeSafe objects to "Jev", single rename + release (config string + repo name).
 1. STANDALONE product, own repo(s) under commonweave GitHub org. Open-core (Linux-model):
    mature open release + enterprise/beta closed tier. NOT internal-only.
 2. Open core (Apache-2.0): router core, Jev-class classifier integration, box queue +
