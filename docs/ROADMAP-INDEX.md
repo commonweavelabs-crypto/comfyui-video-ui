@@ -26,6 +26,8 @@
   jobs that modify code).
 
 ## Non-roadmap reference docs
+- JEV-CLASS-ROUTER-BRAINSTORM.md - where System One models fit (router/navigator/M-H)
+- POCOCK-METHODS-APPLICATION.md
 - POCOCK-METHODS-APPLICATION.md — where spec-first/TDD/deep-modules honestly apply (2026-09-21)
 - ARCHITECTURE-ENGINE-NOTE.md
 - ARCHITECTURE-ENGINE-NOTE.md — engine abstraction decision record
