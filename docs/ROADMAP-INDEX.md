@@ -26,6 +26,8 @@
   jobs that modify code).
 
 ## Non-roadmap reference docs
+- POCOCK-METHODS-APPLICATION.md — where spec-first/TDD/deep-modules honestly apply (2026-09-21)
+- ARCHITECTURE-ENGINE-NOTE.md
 - ARCHITECTURE-ENGINE-NOTE.md — engine abstraction decision record
 - ECOSYSTEM-DECISIONS.md — GitHub home, HF auth, Obsidian taxonomy
 - UI-ACTION-MANUAL.md — every control + API effect (box-generated, verified)
