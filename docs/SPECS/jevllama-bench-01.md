@@ -61,3 +61,23 @@ from the ROLE RUBRIC (one line per role defining scope). 4B + rubric = 8/8 twice
 2. SemIf-style true logit probabilities (confidence thresholds need real numbers,
    not just argmax) - via llama.cpp logprobs or SemIf scorer on the 4B.
 3. Box queue as 4th lane integration test.
+
+
+## The value of accuracy points (Gui's question: does 88% vs 100% matter in $?)
+Real tier prices (Ollama cloud, verified live 2026-09-21): local easy $0 |
+gpt-oss:20b $0.07/$0.30 | deepseek-v4.1-flash $0.15/$0.60 (MED) | kimi-k3 $3.00/$15.00 (HARD).
+Mix 60/25/15, 4:1 in:out, half of easy on local:
+- Always-hard baseline: $6.00/M tok blended.
+- Tiered (correct routing): ~$1.00/M tok = 83.3% savings, ~$4,996 saved per BILLION tokens.
+- 12% misroute rate (8B-classifier scenario, 4x cost per misrouted task via wrong
+  tier/retries): effective $1.37/M = 77.2% savings, ~$4,635/B tok.
+- DELTA between 88% and 100% classifier: ~$360 per billion tokens (~6 margin points).
+Verdict: accuracy points are worth real money at scale, but the rubric got 4B to 100%
+at 0.20s - the cheap 4B is the product default; 8B's extra points don't justify 2x memory.
+Enterprise cloud classifier (TypeSafe/bigger cloud model) = convenience tier (Gui's idea).
+
+## Market scale anchors (for the margin model)
+- Ollama: 52M monthly downloads (search snippet, UNVERIFIED - page 404'd).
+- Ollama cloud pricing VERIFIED: Pro $20/mo ($60 credits), Max $100/mo ($300), Team
+  $500/mo ($1,000 shared credits), Enterprise custom. The neighborhood Jevllama's
+  enterprise tier competes in - and none of these plans route intelligently.
