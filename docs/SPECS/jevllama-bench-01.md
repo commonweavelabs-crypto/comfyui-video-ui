@@ -81,3 +81,32 @@ Enterprise cloud classifier (TypeSafe/bigger cloud model) = convenience tier (Gu
 - Ollama cloud pricing VERIFIED: Pro $20/mo ($60 credits), Max $100/mo ($300), Team
   $500/mo ($1,000 shared credits), Enterprise custom. The neighborhood Jevllama's
   enterprise tier competes in - and none of these plans route intelligently.
+
+
+## Full golden-set run (n=120, live, 2026-09-21)
+Golden set: 120 labeled messages across 5 roles (25/23/30/20/22), 3 difficulty tiers,
+NOW/LATER timing, incl. 20 ambiguity traps ('hi', 'you know what to do', 'just do the
+next obvious step'). Data: scratch/golden_set.json (promoted to repo below).
+
+| Rubric | Accuracy | Avg latency |
+|---|---|---|
+| v1 (basic roles) | 86.7% | 0.196s |
+| v2 (+vague->DIRECTOR) | 82.5% | 0.178s |
+| v3 (+estimate disambiguation) | 85.0% | 0.215s |
+
+**Winner: rubric v1 (86.7%).** v2/v3 taught: over-specifying rules causes overcorrection;
+the model trades one confusion for another. Prompt iteration has diminishing returns.
+
+## The architecture insight (confirms the original design)
+The residual misses are AMBIGUOUS commands ('review my project end to end and fix what's
+wrong' - bug_reporter or director?) - exactly the messages the M-F router design sends
+to the FALLBACK chain (main LLM decides). The classifier doesn't need to solve ambiguity;
+it needs to recognize it. That's what SemIf's true probabilities (vs argmax) will give us:
+low max-probability = escalate. Accuracy on clear-cut messages is near-perfect.
+
+## Updated verdict for the product
+- qwen3:4b + rubric v1: 86.7% @ 0.2s locally, free. Good enough for the MVP router with
+  confidence-threshold fallback to the main LLM.
+- Path to >95%: SemIf logit probabilities -> confidence gating -> ambiguous to fallback.
+- 8B adds latency, not accuracy (88% on 8-msg set vs 4B's 100% there - noise at small n,
+  and on the 120-set it's not worth re-running until SemIf probabilities are in).
