@@ -110,3 +110,15 @@ low max-probability = escalate. Accuracy on clear-cut messages is near-perfect.
 - Path to >95%: SemIf logit probabilities -> confidence gating -> ambiguous to fallback.
 - 8B adds latency, not accuracy (88% on 8-msg set vs 4B's 100% there - noise at small n,
   and on the 120-set it's not worth re-running until SemIf probabilities are in).
+
+
+## J2: logprob classifier (SemIf-style, 2026-09-21)
+Ollama's OpenAI-compat /v1/chat/completions supports logprobs + top_logprobs. Assistant
+prefill ("ROLE:") forces the first token to BE the role word; top-20 logprobs merged into
+a role probability distribution. Self-reported confidence PROVEN junk (all 120 msgs
+self-report 0.95+; actual acc 91.7%). Logprob classifier: **94.2% @ ~80ms warm** (up from
+91.7%), 98% coverage. BUT: residual errors are CONFIDENT errors (p_top=1.0 when wrong) -
+confidence doesn't discriminate the ambiguous tail. Defense = escalation ladder (J4):
+retry-with-rephrase, 2nd-pass verification. Threshold gate kept at 0.75 (harmless).
+Committed in tierllama repo. Shipped: classifier.py v2 (dual-endpoint: /v1 for logprobs,
+/api/chat for dims).
