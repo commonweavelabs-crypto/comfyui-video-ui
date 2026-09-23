@@ -36,3 +36,5 @@
 - [AI Film Craft Rules](AI-FILM-CRAFT-RULES.md) — Pj Accetturo's 3 rules (behavior-not-emotion prompts, per-state character sheets, scale locks) + Qwen Image 2.1 as the local character-sheet/editing engine. Apply in Director prompt engine + Character Sheets milestone.
 
 - [Nexus Skill Extraction](NEXUS-EXTRACTION.md) - Pj Accetturo's Nexus Skill (credited) diffed into our Director design: 12 adoptable ideas, per-model adaptations, ties to the emotion engine + state sheets + scale locks.
+
+- [Emotion Engine + Environment Engine blueprint](EMOTION-AND-ENVIRONMENT-ENGINE.md) - behavior-first emotion layers (E1-E5) + ambient matrix (air/fog/light/water/cloth/hair: nothing static unless prompted). Director template hooks defined.
