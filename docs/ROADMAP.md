@@ -261,6 +261,16 @@ Role roster (Gui's vision, ordered):
    settings + llm_logs excerpt) and offers "Report this for you?" → posts to
    an endpoint/GitHub issue. High value, medium effort.
 
+Routing engine (Jev-class, sharpened 2026-09-23): the first classification
+step should run as a Jev-class / System One model (SemIf-style logit read —
+(input, options) → probabilities, ~100-300ms, ~free, local) instead of a full
+LLM call. Spec + grounding: docs/JEV-CLASS-ROUTER-BRAINSTORM.md (M-F role
+router as FIRST candidate; navigator risk-gating and background triggers as
+follow-ons; script formatting deliberately excluded — deterministic regex).
+This is the VIDEO-PROJECT use of Jev-class models; the Tierllama router is a
+separate product that shares only the technique. Origin of the 5-role roster
+is this project (committed 9/7-9/8); Tierllama's copy was removed 9/23
+(lineage: tierllama docs/SPECS/role-taxonomy-lineage.md).
 Routing / decision tree: first classification step (intent detect) decides
 which role pack handles the turn: question-about-UI → Navigator/Teacher;
 story idea → Screenwriter; problem-report → Bug Reporter; else → Director.
