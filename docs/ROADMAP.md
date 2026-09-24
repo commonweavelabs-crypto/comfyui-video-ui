@@ -276,6 +276,15 @@ which role pack handles the turn: question-about-UI → Navigator/Teacher;
 story idea → Screenwriter; problem-report → Bug Reporter; else → Director.
 The v3 pack's input-intent guard is the seed of this tree.
 
+Emotion + Environment Engine (blueprint v0.1, 2026-09-23 - restored to its
+correct lane after the Tierllama hygiene pass): the Director learns behavior-
+first emotion translation (objective/obstacle/tactic per beat), state sheets,
+scale locks, and environment physics that must be explicitly prompted (wind/
+fog/hair/leaves freeze unless prompted). Full blueprint: docs/
+EMOTION-AND-ENVIRONMENT-ENGINE.md (Pj Accetturo's Nexus skill credited; AI-FILM-
+CRAFT-RULES.md grounded). Build target: the Director role pack (M-F #1) after
+M-C. Possible Jev-class assist: emotion intensity = a typed Score decision -
+video-project use of the technique, NOT Tierllama scope.
 Capability gating by model (Gui): jobs have MINIMUM MODEL TIERS. If the
 connected model can't do a job (by testing or published benchmarks), show it
 locked with a fun warning, e.g. "This role needs a bigger brain — your model
